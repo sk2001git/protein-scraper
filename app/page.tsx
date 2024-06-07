@@ -24,6 +24,9 @@ import TeamSwitcher from  "@/components/team-switcher"
 import { UserNav } from "@/components/user-nav"
 import Home from "@/components/trial"
 
+export const runtime = "edge";
+
+
 export const metadata: Metadata = {
   title: "Dashboard",
   description: "Example dashboard app built using the components.",
