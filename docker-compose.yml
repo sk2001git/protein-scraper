@@ -5,8 +5,8 @@ services:
       - "5432:5432"
     environment:
       POSTGRES_DB: proteinscraper
-      POSTGRES_USER: seandev
-      POSTGRES_PASSWORD: whosegonacarrylog
+      POSTGRES_USER: #NOT IN ACTION
+      POSTGRES_PASSWORD: #NOT IN ACTION
       POSTGRES_HOST_AUTH_METHOD: trust
     volumes:
       - postgres_data:/var/lib/postgresql/data
