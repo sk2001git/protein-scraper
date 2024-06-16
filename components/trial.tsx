@@ -1,50 +1,60 @@
 "use client";
-import { ScrapeResult } from '@/scraping';
-import { jira_scrape } from '@/scraping';
-import { cheerioScrapeProductDetails, ProductDetails } from '@/cheerio';
+import { ScrapeResult } from '@/backend/scraping';
+import { jira_scrape } from '@/backend/scraping';
 import { useState } from 'react';
-import axios from 'axios';
 
-export default function Home() {
+const Home: React.FC = () => {
   const [url, setUrl] = useState('');
-  // const [response, setResponse] = useState<ScrapeResult | null>(null);
-  const [response, setResponse] = useState<ProductDetails | null>(null); // [1
+  const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const handleScrape = async () => {
-    setLoading(true);
-    try {
-      const url = "https://www.myprotein.com.sg/sports-nutrition/performance-cookie/10530674.html?variation=10637004";
-      const responseData = await axios.post('http://localhost:3000/scrape', { url });
+    if (!url) {
+      setError('URL is required');
+      return;
+    }
 
-      //const responseData: ProductDetails = await cheerioScrapeProductDetails(url);
-      console.log('Scraped data:', responseData);
-      setResponse(responseData.data);
-      console.log('Scraping completed successfully');
-    } catch (error: any) {
-      console.error('Failed to scrape:', error.message);
+    setLoading(true);
+    setError('');
+    setResult(null);
+
+    try {
+      const response = await fetch(`/api/scrape?url=${encodeURIComponent(url)}`);
+      // const data = await response.json();
+
+      // if (!response.ok) {
+      //   throw new Error(data.error || 'Failed to fetch data');
+      // }
+
+      // setResult(data);
+    } catch (err:any ) {
+      setError(err.message);
     } finally {
       setLoading(false);
     }
   };
-
   return (
     <div>
-      <h1>Scrape URL</h1>
+      <h1>Scrape Product Details</h1>
       <input
         type="text"
         value={url}
         onChange={(e) => setUrl(e.target.value)}
-        placeholder="Enter URL"
+        placeholder="Enter product URL"
       />
       <button onClick={handleScrape} disabled={loading}>
-        {loading ? 'Loading...' : 'Scrape'}
+        {loading ? 'Scraping...' : 'Scrape'}
       </button>
-      {response ? (
-        <pre>{JSON.stringify(response, null, 2)}</pre>
-      ) : (
-        <p>No data to display</p>
-      )}
+      {/* {error && <p style={{ color: 'red' }}>{error}</p>} */}
+      {/* {result && (
+        <div>
+          <h2>Scraped Product Details</h2>
+          <pre>{JSON.stringify(result, null, 2)}</pre>
+        </div>
+      )} */}
     </div>
   );
-}
+};
+
+export default Home;
