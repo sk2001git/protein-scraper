@@ -23,6 +23,7 @@ import { Search } from "@/components/search"
 import TeamSwitcher from  "@/components/team-switcher"
 import { UserNav } from "@/components/user-nav"
 import Home from "@/components/trial"
+
 import { LineChartHero } from "@/components/chart/chart"
 
 export const runtime = "edge";

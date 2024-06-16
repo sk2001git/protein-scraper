@@ -8,6 +8,16 @@ import { DateRange } from "react-day-picker";
 import { addDays } from 'date-fns';
 
 
+export interface Product {
+  id: number;
+  name: string;
+}
+interface PriceOverTime {
+  date: string;
+  Price: number;
+
+}
+
 const dataFormatter = (number: any) =>
   `$${Intl.NumberFormat('sg').format(number).toString()}`;
 
@@ -15,9 +25,9 @@ export function LineChartHero() {
   const today = new Date();
   const oneWeekAgo = addDays(today, -7);
 
-  const [chartData, setChartData] = useState([]);
-  const [productId, setProductId] = useState(1); // default to product ID 1
-  const [products, setProducts] = useState([]);
+  const [chartData, setChartData] = useState<PriceOverTime[]> ([]);
+  const [productId, setProductId] = useState<Number>(1); // default to product ID 1
+  const [products, setProducts] = useState<Product[]>([]);
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: oneWeekAgo,
     to: today,

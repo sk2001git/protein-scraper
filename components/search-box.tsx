@@ -16,8 +16,17 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
+import { DateRange } from "react-day-picker";
 
-export function ComboboxDemo({ products, productId, setProductId }) {
+
+import { Product } from "@/components/chart/chart"
+interface ComboboxDemoProps {
+  products: Product[];
+  productId: Number | 0;
+  setProductId: (productId: Number) => void;
+}
+
+export function ComboboxDemo({ products, productId, setProductId }: ComboboxDemoProps) {
   const [open, setOpen] = React.useState(false)
 
   const selectedProduct = products.find(product => product.id === productId);
@@ -49,7 +58,7 @@ export function ComboboxDemo({ products, productId, setProductId }) {
                   value={product.id.toString()}
                   onSelect={(currentValue) => {
                     const newProductId = Number(currentValue);
-                    setProductId(newProductId === productId ? null : newProductId)
+                    setProductId(newProductId === productId ? 0 : newProductId)
                     setOpen(false)
                   }}
                 >
