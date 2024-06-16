@@ -48,7 +48,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return NextResponse.json({error: 'Method Not Allowed'}, { status: 405 });
   }
 
-  const url = decodeURIComponent(req.url!) as string
+  const url = req.url! as string // Might need to decode if u decide to fetch from clinet component
   
   
   if (!url) {
@@ -57,12 +57,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const queryString = url.split('?')[1];
   const params = new URLSearchParams(queryString);
   const productUrl = params.get('url');
-  console.log('Product URL:', productUrl);
 
 
   try {
     const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
-    console.log(`Scraping URL: ${productUrl}`);
     const productDetails = await cheerioScrapeProductDetails(productUrl!);
     console.log('Product details:', productDetails);
 
@@ -84,7 +82,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .select()
       .single();
 
-    console.log("Product id", product.id);
 
     if (upsertError) {
       console.error('Error upserting product:', upsertError);

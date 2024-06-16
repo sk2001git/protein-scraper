@@ -23,6 +23,6 @@
     
   },
   
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "server.mjs", "cheerio.ts"],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "server.mjs", "cheerio.ts", "components/chart/chart.tsx"],
   "exclude": ["node_modules"]
 }

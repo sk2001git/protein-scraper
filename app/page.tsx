@@ -23,6 +23,7 @@ import { Search } from "@/components/search"
 import TeamSwitcher from  "@/components/team-switcher"
 import { UserNav } from "@/components/user-nav"
 import Home from "@/components/trial"
+import { LineChartHero } from "@/components/chart/chart"
 
 export const runtime = "edge";
 
@@ -36,20 +37,7 @@ export default function DashboardPage() {
   return (
     <>
       <div className="md:hidden">
-        <Image
-          src="/examples/dashboard-light.png"
-          width={1280}
-          height={866}
-          alt="Dashboard"
-          className="block dark:hidden"
-        />
-        <Image
-          src="/examples/dashboard-dark.png"
-          width={1280}
-          height={866}
-          alt="Dashboard"
-          className="hidden dark:block"
-        />
+       
       </div>
       <div className="hidden flex-col md:flex">
         <div className="border-b">
@@ -66,7 +54,6 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between space-y-2">
             <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
             <div className="flex items-center space-x-2">
-              <CalendarDateRangePicker />
               <Button>Download</Button>
             </div>
           </div>
@@ -187,30 +174,10 @@ export default function DashboardPage() {
                   </CardContent>
                 </Card>
               </div>
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-                <Card className="col-span-4">
-                  <CardHeader>
-                    <CardTitle>Overview</CardTitle>
-                  </CardHeader>
-                  <CardContent className="pl-2">
-                    <Overview />
-                  </CardContent>
-                </Card>
-                <Card className="col-span-3">
-                  <CardHeader>
-                    <CardTitle>Recent Sales</CardTitle>
-                    <CardDescription>
-                      You made 265 sales this month.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <RecentSales />
-                  </CardContent>
-                </Card>
-              </div>
+            
             </TabsContent>
           </Tabs>
-          <Home />
+          <LineChartHero />
         </div>
       </div>
     </>
