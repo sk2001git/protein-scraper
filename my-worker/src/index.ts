@@ -10,10 +10,15 @@
  * Learn more at https://developers.cloudflare.com/workers/runtime-apis/scheduled-event/
  */
 
+import { ScheduledController } from "@cloudflare/workers-types/experimental";
+import { ExecutionContext } from "@cloudflare/workers-types/experimental";
+
 export interface Env {
   CRON_SECRET: string;
   NEXTJS_API_URL: string; 
 }
+
+
 
 export default {
   async scheduled(
