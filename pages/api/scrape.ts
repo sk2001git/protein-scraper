@@ -54,6 +54,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (!url) {
     return NextResponse.json({ error: 'URL parameter is required' });
   }
+
+  const secret = req.headers['cron-secret'];
+  if (secret !== process.env.CRON_SECRET) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  
   const queryString = url.split('?')[1];
   const params = new URLSearchParams(queryString);
   const productUrl = params.get('url');

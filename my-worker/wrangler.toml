@@ -1,0 +1,18 @@
+name = "my-worker"
+main = "my-worker/src/index.ts"
+workers_dev = true
+compatibility_date = "2024-06-16"
+
+[env.production]
+
+[triggers]
+crons = ["0 8,20 * * *"]  
+
+
+[vars]
+NEXTJS_API_URL = "https://protein-scraper.pages.dev"
+
+
+
+
+

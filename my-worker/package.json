@@ -1,0 +1,10 @@
+{
+  "name": "my-worker",
+  "version": "0.0.0",
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20240614.0",
+    "vitest": "^1.6.0",
+    "wrangler": "3.60.3"
+  },
+  "private": true
+}

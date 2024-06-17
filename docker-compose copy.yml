@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    ports: 
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: proteinscraper
+      POSTGRES_USER: #NOT IN ACTION
+      POSTGRES_PASSWORD: #NOT IN ACTION
+      POSTGRES_HOST_AUTH_METHOD: trust
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      
+volumes:
+  postgres_data:
