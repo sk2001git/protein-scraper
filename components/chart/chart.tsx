@@ -1,11 +1,12 @@
 "use client"
-import { createClient } from '@supabase/supabase-js';
 import { LineChart } from '@tremor/react';
-import { useEffect, useState } from 'react';
-import { ComboboxDemo } from '@/components/search-box';
+import { Suspense, useEffect, useState } from 'react';
+import { SearchBox } from '@/components/search-box';
+import { Skeleton } from "@/components/ui/skeleton"
 import { CalendarDateRangePicker } from '@/components/date-range-picker';
 import { DateRange } from "react-day-picker";
 import { addDays } from 'date-fns';
+import { fetchProductIds, fetchPriceData } from "@/backend/database"
 
 
 export interface Product {
@@ -17,6 +18,10 @@ interface PriceOverTime {
   Price: number;
 
 }
+
+// Testing
+//const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
 
 const dataFormatter = (number: any) =>
   `$${Intl.NumberFormat('sg').format(number).toString()}`;
@@ -32,73 +37,60 @@ export function LineChartHero() {
     from: oneWeekAgo,
     to: today,
   });
+  const [loading, setLoading] = useState<boolean>(true);
+
 
   useEffect(() => {
-    async function fetchProductIds() {
-      const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
-      const { data, error } = await supabase
-        .from('product')
-        .select('id, name');
-      
-      if (error) {
-        console.error('Error fetching product IDs:', error);
-      } else {
+    const loadProducts = async () => {
+      try {
+        const data = await fetchProductIds();
         setProducts(data);
-        
+      } catch (error) {
+        console.error('Error loading products:', error);
       }
-    }
-
-    fetchProductIds();
+    };
+    loadProducts();
   }, []);
 
   useEffect(() => {
-    async function fetchData() {
-      const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
-      
-      let query = supabase
-        .from('price')
-        .select('price, timestamp')
-        .eq('productid', productId);
-      
-      if (dateRange?.from && dateRange?.to) {
-        query = query
-          .gte('timestamp', dateRange.from.toISOString())
-          .lte('timestamp', dateRange.to.toISOString());
+    const loadPriceData = async () => {
+      try {
+        setLoading(true);
+        const data = await fetchPriceData(productId, dateRange);
+        setChartData(data);
+      } catch (error) {
+        console.error('Error loading price data:', error);
+      } finally {
+        setLoading(false);
       }
+    };
 
-      const { data, error } = await query;
-
-      if (error) {
-        console.error('Error fetching data:', error);
-      } else {
-        const formattedData = data.map((item) => ({
-          date: new Date(item.timestamp).toLocaleDateString('en-US'),
-          Price: item.price,
-        }));
-        setChartData(formattedData);
-      }
-    }
-
-    fetchData();
+    loadPriceData();
   }, [productId, dateRange]);
 
   return (
     <div>
-      <ComboboxDemo
+      <SearchBox
         products={products}
         productId={productId}
         setProductId={setProductId}
       />
       <CalendarDateRangePicker className="my-4" onChange={setDateRange} />
-      <LineChart
-        className="h-80"
-        data={chartData}
-        index="date"
-        categories={['Price']}
-        colors={['indigo']}
-        valueFormatter={dataFormatter}
-        yAxisWidth={60}
-      />
+      <Suspense fallback={<div className="h-80 w-full">Loading.... </div>}>
+        {loading ? (
+          <Skeleton className="h-80 w-full bg-white" />
+        ) : (
+          <LineChart
+            className="h-80"
+            data={chartData}
+            index="date"
+            categories={['Price']}
+            colors={['indigo']}
+            valueFormatter={dataFormatter}
+            yAxisWidth={60}
+          />
+        )}
+      </Suspense>
     </div>
   );
 }

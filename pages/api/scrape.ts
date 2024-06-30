@@ -13,6 +13,7 @@ interface ProductDetails {
   before_discount: string;
   save: string;
   price: string;
+  discount_percentage: number;
 }
 
 const cheerioScrapeProductDetails = async (url: string): Promise<ProductDetails> => {
@@ -30,18 +31,24 @@ const cheerioScrapeProductDetails = async (url: string): Promise<ProductDetails>
       choices.push($(element).text().trim());
     });
 
+    const discountText = $('.stripBanner_text').find('p').text().trim();
+    const discountMatch = discountText.match(/(\d+)% OFF/);
+    const discount_percentage = discountMatch ? parseInt(discountMatch[1], 10) : 55;
+
     return {
       title,
       subtitle,
       before_discount,
       save,
       price,
+      discount_percentage,
     };
   } catch (error) {
     console.error('Error scraping URL:', error);
     throw error;
   }
 };
+
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'GET') {
@@ -102,6 +109,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .insert({
         price: parseFloat(productDetails.price.replace(/[^0-9.-]+/g, "")),
         productid: product.id,
+        discount_percentage: productDetails.discount_percentage,
       })
       .select();
 

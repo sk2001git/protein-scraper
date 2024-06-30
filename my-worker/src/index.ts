@@ -18,6 +18,7 @@ export interface Env {
   NEXTJS_API_URL: string; 
 }
 
+// npx wrangler dev my-worker/src/index.ts --test-scheduled   command to test
 
 
 export default {
@@ -31,6 +32,8 @@ export default {
       'https://www.myprotein.com.sg/sports-nutrition/impact-whey-protein-powder/10530943.html',
       'https://www.myprotein.com.sg/sports-nutrition/clear-whey-protein-powder/12081395.html',
     ];
+
+
 
     for (const url of urls) {
       try {
@@ -55,12 +58,26 @@ export default {
   },
 
   async fetch(request: Request, env: Env): Promise<Response> {
-    await this.scheduled({} as ScheduledController, env, {} as ExecutionContext);
-    return new Response("Scheduled task executed", {
-      status: 200,
-      headers: {
-        'Content-Type': 'text/plain',
-      },
-    });
+    if (request.method === 'POST') {
+      const { CRON_SECRET } : Env = await request.json();
+
+      if (CRON_SECRET !== env.CRON_SECRET) {
+        return new Response('Unauthorized', { status: 401 });
+      }
+
+      // Manually trigger the scheduled task
+      const controller: ScheduledController = {} as ScheduledController;
+      const ctx: ExecutionContext = {} as ExecutionContext;
+      await this.scheduled(controller, env, ctx);
+      
+      return new Response("Scheduled task executed", {
+        status: 200,
+        headers: {
+          'Content-Type': 'text/plain',
+        },
+      });
+    }
+
+    return new Response("Method not allowed", { status: 405 });
   },
 };
