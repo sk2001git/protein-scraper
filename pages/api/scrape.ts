@@ -2,8 +2,9 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { createClient } from '@supabase/supabase-js';
 import axios from 'axios';
-import  * as cheerio from 'cheerio';
+import * as cheerio from 'cheerio';
 import { NextResponse } from 'next/server'
+import { IncomingHttpHeaders } from 'http';
 
 export const runtime = 'edge';
 
@@ -13,6 +14,7 @@ interface ProductDetails {
   before_discount: string;
   save: string;
   price: string;
+  discount_percentage: number;
 }
 
 const cheerioScrapeProductDetails = async (url: string): Promise<ProductDetails> => {
@@ -30,12 +32,17 @@ const cheerioScrapeProductDetails = async (url: string): Promise<ProductDetails>
       choices.push($(element).text().trim());
     });
 
+    const discountText = $('.stripBanner_text').find('p').text().trim();
+    const discountMatch = discountText.match(/(\d+)% OFF/);
+    const discount_percentage = discountMatch ? parseInt(discountMatch[1], 10) : 55;
+
     return {
       title,
       subtitle,
       before_discount,
       save,
       price,
+      discount_percentage,
     };
   } catch (error) {
     console.error('Error scraping URL:', error);
@@ -43,21 +50,24 @@ const cheerioScrapeProductDetails = async (url: string): Promise<ProductDetails>
   }
 };
 
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'GET') {
     return NextResponse.json({error: 'Method Not Allowed'}, { status: 405 });
   }
-
-  const url = req.url! as string // Might need to decode if u decide to fetch from clinet component
+  const url = req.url! as string // Might need to decode if u decide to fetch from client component
   
   
-  if (!url) {
-    return NextResponse.json({ error: 'URL parameter is required' });
-  }
+  if (!url || typeof url !== 'string') {
+    return res.status(400).json({ error: 'URL parameter is required' });
+  }  
+  const headers = req.headers as IncomingHttpHeaders;
+  //@ts-ignore: Despite using the headers type as well as optional chaining, TypeScript still complains about the type of headers.get
+  const secret = headers?.get('cron-secret');
 
-  const secret = req.headers['cron-secret'];
-  if (secret !== process.env.CRON_SECRET) {
-    return res.status(401).json({ error: 'Unauthorized' });
+  console.log('Received cron-secret:', secret); // Debugging statement
+  if (!secret || secret !== process.env.CRON_SECRET) {
+    return NextResponse.json({ error: 'Unauthorized Accessing API' }, { status: 401 });
   }
 
   
@@ -69,6 +79,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
     const productDetails = await cheerioScrapeProductDetails(productUrl!);
+
     console.log('Product details:', productDetails);
 
     if (!productDetails.title) {
@@ -102,6 +113,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .insert({
         price: parseFloat(productDetails.price.replace(/[^0-9.-]+/g, "")),
         productid: product.id,
+        discount_percentage: productDetails.discount_percentage,
       })
       .select();
 

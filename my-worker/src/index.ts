@@ -18,6 +18,7 @@ export interface Env {
   NEXTJS_API_URL: string; 
 }
 
+// npx wrangler dev my-worker/src/index.ts --test-scheduled   command to test
 
 
 export default {
@@ -31,15 +32,19 @@ export default {
       'https://www.myprotein.com.sg/sports-nutrition/impact-whey-protein-powder/10530943.html',
       'https://www.myprotein.com.sg/sports-nutrition/clear-whey-protein-powder/12081395.html',
     ];
+    console.log(env.NEXTJS_API_URL)
+
 
     for (const url of urls) {
       try {
+        
         const apiUrl = `${env.NEXTJS_API_URL}/api/scrape?url=${url}`;
+        console.log(`Calling API for ${url} at ${apiUrl}`);
         const response = await fetch(apiUrl, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
-            'cron-secret': env.CRON_SECRET,
+            'Cron-Secret': env.CRON_SECRET,
           },
         });
 
@@ -55,12 +60,19 @@ export default {
   },
 
   async fetch(request: Request, env: Env): Promise<Response> {
-    await this.scheduled({} as ScheduledController, env, {} as ExecutionContext);
-    return new Response("Scheduled task executed", {
-      status: 200,
-      headers: {
-        'Content-Type': 'text/plain',
-      },
-    });
-  },
+    if (request.method === 'GET') {
+      await this.scheduled({} as ScheduledController, env, {} as ExecutionContext);
+      return new Response("Scheduled task executed", {
+        status: 200,
+        headers: {
+          'Content-Type': 'text/plain',
+        },
+      });
+    }
+    return new Response("Cloudflare Method not allowed", { status: 405 });
+
+  }
+
+   
+
 };
