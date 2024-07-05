@@ -12,11 +12,12 @@ import { fetchProductIds, fetchPriceData } from "@/backend/database"
 export interface Product {
   id: number;
   name: string;
+
 }
 interface PriceOverTime {
   date: string;
   Price: number;
-
+  discount: number;
 }
 
 // Testing
@@ -57,7 +58,11 @@ export function LineChartHero() {
       try {
         setLoading(true);
         const data = await fetchPriceData(productId, dateRange);
-        setChartData(data);
+        const discountedData = data.map((item) => ({
+          ...item,
+          Price: item.Price * (1 - item.discount / 100),
+        }));
+        setChartData(discountedData);
       } catch (error) {
         console.error('Error loading price data:', error);
       } finally {

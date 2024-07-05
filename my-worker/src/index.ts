@@ -60,19 +60,21 @@ export default {
   },
 
   async fetch(request: Request, env: Env): Promise<Response> {
+    const url = new URL(request.url);
+
+    if (url.pathname === '/favicon.ico') {
+      return new Response(null, { status: 200 });
+    }
     if (request.method === 'GET') {
-      await this.scheduled({} as ScheduledController, env, {} as ExecutionContext);
-      return new Response("Scheduled task executed", {
+      console.log('Fetch handler invoked');
+      await this.scheduled( {} as ScheduledController, env, {} as ExecutionContext);
+      return new Response("Fetch handler executed", {
         status: 200,
         headers: {
           'Content-Type': 'text/plain',
         },
       });
     }
-    return new Response("Cloudflare Method not allowed", { status: 405 });
-
+    return new Response("Method not allowed", { status: 405 });
   }
-
-   
-
 };
