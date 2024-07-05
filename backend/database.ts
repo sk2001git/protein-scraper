@@ -9,6 +9,7 @@ export interface Product {
 interface PriceOverTime {
   date: string;
   Price: number;
+  discount: number;
 }
 /**
  * Fetches all products from the product table
@@ -35,7 +36,7 @@ export const fetchProductIds = async (): Promise<Product[]> => {
 
 export const fetchPriceData = async (productId: Number, dateRange: DateRange | undefined): Promise<PriceOverTime[]> => {
   const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
-  let query = supabase.from('price').select('price, timestamp').eq('productid', productId);
+  let query = supabase.from('price').select('price, timestamp, discount_percentage').eq('productid', productId);
 
   if (dateRange?.from && dateRange?.to) {
     query = query.gte('timestamp', dateRange.from.toISOString()).lte('timestamp', dateRange.to.toISOString());
@@ -49,5 +50,6 @@ export const fetchPriceData = async (productId: Number, dateRange: DateRange | u
   return data.map((item) => ({
     date: new Date(item.timestamp).toLocaleDateString('en-US'),
     Price: item.price,
+    discount: item.discount_percentage,
   }));
 };

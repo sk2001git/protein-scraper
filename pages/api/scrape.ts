@@ -1,6 +1,6 @@
 
 import { NextApiRequest, NextApiResponse } from 'next';
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 import { NextResponse } from 'next/server'
@@ -15,6 +15,11 @@ interface ProductDetails {
   save: string;
   price: string;
   discount_percentage: number;
+}
+
+interface DiscountDetails {
+  discount_percentage: number;
+  event_name: string;
 }
 
 const cheerioScrapeProductDetails = async (url: string): Promise<ProductDetails> => {
@@ -50,6 +55,75 @@ const cheerioScrapeProductDetails = async (url: string): Promise<ProductDetails>
   }
 };
 
+// const cheerioScrapeDiscountDetails = async (url: string): Promise<DiscountDetails> => {
+//   try {
+//     const { data } = await axios.get(url);
+//     const $ = cheerio.load(data);
+
+//     const discountText = $('.stripBanner_text').text().trim();
+
+//     const discountMatch = discountText.match(/(\d+)% OFF/);
+//     const discount_percentage = discountMatch ? parseInt(discountMatch[1], 10) : 0;
+
+//     const eventMatch = discountText.match(/USE CODE \[([^\]]+)\] (.*)/);
+//     const event_name = eventMatch ? `${eventMatch[1]} - ${eventMatch[2]}` : '';
+
+//     return {
+//       discount_percentage,
+//       event_name,
+//     };
+//   } catch (error) {
+//     console.error('Error scraping URL:', error);
+//     throw error;
+//   }
+// };
+
+// const getExistingDiscount = async (event_name: string, supabase: SupabaseClient ) => {
+//   const { data, error } = await supabase
+//     .from('discounts')
+//     .select('id, event_dates')
+//     .eq('event_name', event_name)
+//     .single();
+//   if (error && error.code === 'PGRST116') {
+//     return null; // No existing discount
+//   } else if (error) {
+//     throw error; // Other errors
+//   }
+//   return data;
+// };
+
+// const updateDiscountDates = async (discountId: number, newEventDates: string[], discount_percentage: number, supabase: SupabaseClient) => {
+//   const { data, error } = await supabase
+//     .from('discounts')
+//     .update({
+//       discount_percentage,
+//       event_dates: newEventDates,
+//     })
+//     .eq('id', discountId)
+//     .select()
+//     .single();
+//   if (error) {
+//     throw error;
+//   }
+//   return data;
+// };  
+
+// const insertNewDiscount = async (discount_percentage: number, event_name: string, event_dates: string[], supabase:SupabaseClient) => {
+//   const { data, error } = await supabase
+//     .from('discounts')
+//     .insert({
+//       discount_percentage,
+//       event_name,
+//       event_dates,
+//       created_at: new Date()
+//     })
+//     .select()
+//     .single();
+//   if (error) {
+//     throw error;
+//   }
+//   return data;
+// };
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'GET') {
@@ -108,6 +182,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     console.log('Upserted product:', product);
 
+    // const discountDetails = await cheerioScrapeDiscountDetails(productUrl!); // Discount first due to how it is foreign key by price table towards it
+    // const existingDiscount = await getExistingDiscount(discountDetails.event_name, supabase);
+    // if (existingDiscount) {
+    //   const newEventDates = [...existingDiscount.event_dates, new Date().toISOString()];
+    //   try {
+    //     await updateDiscountDates(existingDiscount.id, newEventDates, discountDetails.discount_percentage, supabase);
+    //   }
+    // } else {
+    //   await insertNewDiscount(discountDetails.discount_percentage, discountDetails.event_name, [new Date().toISOString()], supabase);
+    // }
+
+
+
     const { data: price, error: insertError, status: insertStatus } = await supabase
       .from('price')
       .insert({
@@ -121,6 +208,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       console.error('Error inserting price:', insertError);
       return NextResponse.json({ error: 'Failed to insert price', details: insertError.message, status: insertStatus }, { status: 500 });
     }
+
+
+   
+    
 
 
     return NextResponse.json({ product, price, productDetails })
