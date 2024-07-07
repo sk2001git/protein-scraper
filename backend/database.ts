@@ -1,6 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 import { DateRange } from "react-day-picker";
 
+export const runtime = 'edge';
+
 export interface Product {
   id: number;
   name: string;

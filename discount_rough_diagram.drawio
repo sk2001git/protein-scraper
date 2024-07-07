@@ -1,0 +1,92 @@
+<mxfile host="65bd71144e">
+    <diagram name="Page-1" id="2YBvvXClWsGukQMizWep">
+        <mxGraphModel dx="998" dy="410" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="DzpxxUs7f1oaUsa0AEz8-1" value="Detection of new event or discount banner" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="20" y="160" width="270" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="DzpxxUs7f1oaUsa0AEz8-2" value="" style="endArrow=classic;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" parent="1" source="DzpxxUs7f1oaUsa0AEz8-1" edge="1">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <mxPoint x="400" y="420" as="sourcePoint"/>
+                        <mxPoint x="490" y="190" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="DzpxxUs7f1oaUsa0AEz8-3" value="Retrieve current event in &lt;b&gt;active_event &lt;/b&gt;table.&lt;div&gt;Is it the same event now?&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="490" y="160" width="270" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="DzpxxUs7f1oaUsa0AEz8-4" value="" style="endArrow=classic;html=1;rounded=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" parent="1" source="DzpxxUs7f1oaUsa0AEz8-3" edge="1">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <mxPoint x="300" y="200" as="sourcePoint"/>
+                        <mxPoint x="625" y="330" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="DzpxxUs7f1oaUsa0AEz8-5" value="" style="endArrow=classic;html=1;rounded=0;" parent="1" edge="1">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <mxPoint x="624" y="220" as="sourcePoint"/>
+                        <mxPoint x="410" y="330" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="DzpxxUs7f1oaUsa0AEz8-6" value="Yes" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" parent="1" vertex="1">
+                    <mxGeometry x="630" y="258" width="40" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="DzpxxUs7f1oaUsa0AEz8-8" value="Do nothing, do not insert this to the database&amp;nbsp;" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="537.5" y="330" width="175" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="DzpxxUs7f1oaUsa0AEz8-10" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" parent="1" source="DzpxxUs7f1oaUsa0AEz8-9" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="290" y="440" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="DzpxxUs7f1oaUsa0AEz8-11" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" parent="1" source="DzpxxUs7f1oaUsa0AEz8-9" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="500" y="440" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="DzpxxUs7f1oaUsa0AEz8-9" value="Swap in events detected.&lt;div&gt;&lt;b&gt;changeActiveEvent(string, string, DBClient)&amp;nbsp;&lt;/b&gt;&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="315" y="330" width="175" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="DzpxxUs7f1oaUsa0AEz8-32" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="DzpxxUs7f1oaUsa0AEz8-12" target="DzpxxUs7f1oaUsa0AEz8-20" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="DzpxxUs7f1oaUsa0AEz8-12" value="Update end date for&amp;nbsp; previous event in &lt;b&gt;discount_date_ranges&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="210" y="440" width="175" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="DzpxxUs7f1oaUsa0AEz8-17" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="DzpxxUs7f1oaUsa0AEz8-13" target="DzpxxUs7f1oaUsa0AEz8-16" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="DzpxxUs7f1oaUsa0AEz8-21" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="DzpxxUs7f1oaUsa0AEz8-13" target="DzpxxUs7f1oaUsa0AEz8-20" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="DzpxxUs7f1oaUsa0AEz8-13" value="Check if new event exist in &lt;b&gt;discounts &lt;/b&gt;table" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="410" y="440" width="175" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="DzpxxUs7f1oaUsa0AEz8-14" value="No" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" parent="1" vertex="1">
+                    <mxGeometry x="477.5" y="248" width="40" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="DzpxxUs7f1oaUsa0AEz8-23" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="DzpxxUs7f1oaUsa0AEz8-16" target="DzpxxUs7f1oaUsa0AEz8-20" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="DzpxxUs7f1oaUsa0AEz8-16" value="Insert event into &lt;b&gt;discounts &lt;/b&gt;table&amp;nbsp;" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="410" y="530" width="175" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="DzpxxUs7f1oaUsa0AEz8-18" value="No" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" parent="1" vertex="1">
+                    <mxGeometry x="497.5" y="500" width="40" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="DzpxxUs7f1oaUsa0AEz8-33" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="DzpxxUs7f1oaUsa0AEz8-20" target="DzpxxUs7f1oaUsa0AEz8-28" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="DzpxxUs7f1oaUsa0AEz8-20" value="Insert new event into &lt;b&gt;active_event&amp;nbsp;&lt;/b&gt;table&amp;nbsp;" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="410" y="620" width="175" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="DzpxxUs7f1oaUsa0AEz8-22" value="Yes" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" parent="1" vertex="1">
+                    <mxGeometry x="620" y="518" width="40" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="DzpxxUs7f1oaUsa0AEz8-28" value="Insert new event date ranges to&amp;nbsp;&lt;div&gt;&lt;b&gt;discount_date_ranges&lt;/b&gt;&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="410" y="710" width="175" height="60" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>

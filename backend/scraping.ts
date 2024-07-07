@@ -5,6 +5,7 @@ import { ScrapeResponse } from '@mendable/firecrawl-js';
 import Error from 'next/error';
 
 const axios = require('axios');
+export const runtime = 'edge';
 
 export interface ScrapeResult {
   url: string;
