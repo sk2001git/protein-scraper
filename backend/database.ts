@@ -1,5 +1,3 @@
-"use server"
-
 import { createClient } from '@supabase/supabase-js';
 import { DateRange } from "react-day-picker";
 

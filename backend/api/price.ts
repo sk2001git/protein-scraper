@@ -12,13 +12,14 @@ interface PriceDetails {
 
 export const runtime = 'edge';
 
-export const insertPrice = async (priceString: string, productId: number, discount_percentage: number, supabase: SupabaseClient): Promise<NextResponse | PriceDetails[]> => {
+export const insertPrice = async (priceString: string, productId: number, discount_percentage: number, discount_id:number, supabase: SupabaseClient): Promise<NextResponse | PriceDetails[]> => {
   const { data: price, error: insertError, status: insertStatus } = await supabase
   .from('price')
   .insert({
     price: parseFloat(priceString.replace(/[^0-9.-]+/g, "")),
     productid: productId,
     discount_percentage: discount_percentage,
+    discount_id: discount_id
   })
   .select();
 

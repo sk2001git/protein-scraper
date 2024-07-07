@@ -5,8 +5,35 @@ import { NextResponse } from 'next/server'
 import { IncomingHttpHeaders } from 'http';
 import { cheerioScrapeProductDetails, updateProduct } from '@/backend/api/product';
 import { insertPrice } from '@/backend/api/price';
+import { changeActiveEvent } from '@/backend/api/active-events';
+import { triggerDiscounts } from '@/backend/api/discounts';
+import { DiscountDetails } from '@/types/discount-details';
 
 export const runtime = 'edge';
+
+/**
+ * Triggers when discount banner changes and updates all relevant tables including discount, discount_date_ranges and active_event
+ * @param url  The URL of the product page
+ * @param supabase The supabase client to be re-used
+ * @returns data regarding discount details such as the event_name, and discount_percentage
+ */
+const triggerDiscountWorkflow = async (url:string, supabase: SupabaseClient): Promise<DiscountDetails | null> => { 
+  // This triggers the check for discounts, creating them if not present, and then returning the discount object 
+  try {
+    const data = await triggerDiscounts(url, supabase);
+    // We then update the active_event with the discount id as well as the discount_date_ranges table
+    if (!data || !data.id){
+      console.error('Failed to trigger discount workflow: No data returned');
+      return null;
+    }
+    await changeActiveEvent(new Date(), data.id!, supabase);
+    return data;
+  } catch (error) {
+    console.error('Error triggering discount workflow:', error);
+    return null;
+  }
+  
+}
 
 
 /**
@@ -74,13 +101,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
     console.log('Upserted product:', product);
 
- 
+     // Implement discount functions as well as their relevant triggers
+    const discountData = await triggerDiscountWorkflow(productUrl, supabase);
+    if (!discountData) {
+      console.error('Data not returned from discount workflow');
+      return NextResponse.json({ error: 'Failed to trigger discount workflow' }, { status: 500 });
+    }
 
     // Deal with price table which has a foreign key to product table (dependent), get all prices related to product
-    const priceList = await insertPrice(productDetails.price, product.id!, productDetails.discount_percentage, supabase);
+    const priceList = await insertPrice(productDetails.price, product.id!, discountData?.discount_percentage!, discountData?.id!, supabase);
     if (priceList instanceof NextResponse) {
       return priceList;
     }
+
 
     return NextResponse.json({ product, priceList, productDetails })
 

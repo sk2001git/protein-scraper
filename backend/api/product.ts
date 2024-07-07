@@ -20,6 +20,11 @@ interface ProductDetails {
   discount_percentage: number;
 }
 
+/**
+ * Scrapes the information currently from the product page for my-protein specifcally
+ * @param url 
+ * @returns Details of the product scraped from the product page which includes the title, subtitle, before_discount, save, price and discount_percentage
+ */
 export const cheerioScrapeProductDetails = async (url: string): Promise<ProductDetails> => {
   try {
     const { data } = await axios.get(url);
@@ -53,6 +58,12 @@ export const cheerioScrapeProductDetails = async (url: string): Promise<ProductD
   }
 };
 
+/**
+ * Update the existing product details 
+ * @param productDetails  The details of the product to be updated 
+ * @param supabase 
+ * @returns The updated product details else a NextResponse denoting an error 
+ */
 export const updateProduct = async (productDetails: ProductDetails, supabase: SupabaseClient): Promise<NextResponse | ProductDetails> => {
   const { data: product, error: upsertError, status: upsertStatus } = await supabase
   .from('product')

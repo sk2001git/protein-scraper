@@ -1,4 +1,3 @@
-"use server"
 import { SupabaseClient } from "@supabase/supabase-js";
 
 export const runtime = 'edge';
@@ -29,7 +28,7 @@ export const getActiveDiscountDateRanges = async (
 
 export const updateEndDate = async (
   id: number,
-  endDate: string,
+  endDate: Date,
   supabase: SupabaseClient
 ): Promise<void> => {
   const { data, error } = await supabase
@@ -43,8 +42,8 @@ export const updateEndDate = async (
 
 export const addDiscountDateRange = async (
   discountId: number,
-  startDate: string,
-  endDate: string | null,
+  startDate: Date,
+  endDate: Date | null,
   supabase: SupabaseClient
 ): Promise<void> => {
   const { data, error } = await supabase
