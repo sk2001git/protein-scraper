@@ -2,7 +2,6 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 import { NextResponse } from 'next/server';
-import puppeteer from 'puppeteer';
 
 export const runtime = 'edge';
 /**
@@ -76,62 +75,6 @@ export const cheerioScrapeProductDetails = async (url: string): Promise<ProductD
   }
 };
 
-export const scrapeButtonOptions = async (url: string): Promise<ProductOption[]> => {
-  const browser = await puppeteer.launch();
-  const page = await browser.newPage();
-  await page.goto(url, { waitUntil: 'networkidle2' });
-
-  const options = await page.evaluate(() => {
-    return Array.from(document.querySelectorAll('.athenaProductVariations_listItem button')).map((button) => ({
-      mass: (button.textContent?.split('\n')[0] || '').trim(),
-      variationId: button.getAttribute('data-variation-id') || ''
-    }));
-  });
-
-  await browser.close();
-  return options;
-};
-
-function delay(time: number) {
-  return new Promise(function(resolve) { 
-    setTimeout(resolve, time)
-  });
-}
-
-export const puppeteerScrapeProductDetails = async (url: string): Promise<PriceMassTag[]> => {
-  const browser = await puppeteer.launch();
-  const page = await browser.newPage();
-  await page.goto(url, { waitUntil: 'networkidle2' });
-
-  // Scrape button options
-  const options = await scrapeButtonOptions(url);
-  let optionsArray: PriceMassTag[] = [];
-
-  // Iterate over product options to fetch prices
-  for (let option of options) {
-    const { mass, variationId } = option;
-    if (variationId) {
-      await page.click(`button[data-variation-id="${variationId}"]`);
-      
-      // Reload the page
-      await page.reload({ waitUntil: ["networkidle0", "domcontentloaded"] });
-      
-      // Wait for 2 seconds to allow the page to fully load
-      await delay(2000);
-
-      // Scrape the updated price
-      const optionPrice = await page.evaluate(() => {
-        const priceElement = document.querySelector('.athenaProductPage_productPrice_top .productPrice_price');
-        return priceElement ? priceElement.textContent?.trim() : '';
-      });
-
-      optionsArray.push({ option: mass, price: optionPrice! });
-    }
-  }
-
-  await browser.close();
-  return optionsArray;
-};
 
 /**
  * Update the existing product details 
