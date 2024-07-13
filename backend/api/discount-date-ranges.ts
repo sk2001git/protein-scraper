@@ -49,7 +49,7 @@ export const addDiscountDateRange = async (
 ): Promise<void> => {
   const { data, error } = await supabase
     .from('discount_date_ranges')
-    .insert([{ discount_id: discountId, event_name: eventName, start_date: startDate, end_date: endDate }]);
+    .upsert([{ discount_id: discountId, event_name: eventName, start_date: startDate, end_date: endDate }]);
   if (error) {
     throw error;
   }
