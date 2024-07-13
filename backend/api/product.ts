@@ -19,6 +19,20 @@ interface ProductDetails {
   price: string;
   discount_percentage: number;
 }
+interface ProductOption {
+  mass: string;
+  variationId: string;
+}
+
+export interface PriceMassTag {
+  option: string;
+  price: string;
+
+}
+
+interface ExpandedProductDetails extends ProductDetails {
+  choices: ProductOption[];
+}
 
 /**
  * Scrapes the information currently from the product page for my-protein specifcally
@@ -52,11 +66,15 @@ export const cheerioScrapeProductDetails = async (url: string): Promise<ProductD
       price,
       discount_percentage,
     };
+
+
+
   } catch (error) {
     console.error('Error scraping URL:', error);
     throw error;
   }
 };
+
 
 /**
  * Update the existing product details 

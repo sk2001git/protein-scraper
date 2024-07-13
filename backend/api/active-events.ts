@@ -70,11 +70,12 @@ const getCurrentActiveEvent = async (supabase: SupabaseClient): Promise<ActiveEv
 export const changeActiveEvent = async (
   new_start_date: Date,
   discountId: number,
+  eventName: string,
   supabase: SupabaseClient
 ):Promise<void> => { 
   const previousActiveEvent = await getCurrentActiveEvent(supabase);
 
-    // Note that the next 2 step are to deal with active_event table
+  // Note that the next 2 step are to deal with active_event table
   // Deactivate current event (Clear all event since it will only have 1 row) 
   await deactivateCurrentEvent(supabase);
 
@@ -89,6 +90,12 @@ export const changeActiveEvent = async (
       await updateEndDate(previousDateRange.id, new_start_date, supabase);
     }
   }
-  // Adds a new date range for the new event
-  await addDiscountDateRange(discountId, new_start_date, null, supabase);
+  if (!previousActiveEvent) { // Suppose we have no previous active events, we will add a discount date range
+    await addDiscountDateRange(discountId, eventName, new_start_date, null, supabase);
+  }
+  // Adds a new date range for the new event, since this runs every cron job, we only want to update start_date if the event is new
+  if (currentActiveEvent?.discount_id != previousActiveEvent?.discount_id) {
+    await addDiscountDateRange(discountId, eventName, new_start_date, null, supabase);
+  }
+  // else do nothing since the currentevent still active, no need to change discount date range
 }
