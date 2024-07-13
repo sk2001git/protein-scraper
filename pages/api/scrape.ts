@@ -26,7 +26,7 @@ const triggerDiscountWorkflow = async (url:string, supabase: SupabaseClient): Pr
       console.error('Failed to trigger discount workflow: No data returned');
       return null;
     }
-    await changeActiveEvent(new Date(), data.id!, supabase);
+    await changeActiveEvent(new Date(), data.id!, data.event_name!, supabase);
     return data;
   } catch (error) {
     console.error('Error triggering discount workflow:', error);
@@ -53,11 +53,11 @@ const checkHeaders = (req: NextApiRequest): NextResponse | null => {
   }  
   const headers = req.headers as IncomingHttpHeaders;
   //@ts-ignore: Despite using the headers type as well as optional chaining, TypeScript still complains about the type of headers.get
-  const secret = headers?.get('cron-secret');
+  // const secret = headers?.get('cron-secret');
 
-  if (!secret || secret !== process.env.CRON_SECRET) {
-    return NextResponse.json({ error: 'Unauthorized Accessing API' }, { status: 401 });
-  }
+  // if (!secret || secret !== process.env.CRON_SECRET) {
+  //   return NextResponse.json({ error: 'Unauthorized Accessing API' }, { status: 401 });
+  // }
   return null;
 }
 

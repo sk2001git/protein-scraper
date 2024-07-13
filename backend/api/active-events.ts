@@ -70,6 +70,7 @@ const getCurrentActiveEvent = async (supabase: SupabaseClient): Promise<ActiveEv
 export const changeActiveEvent = async (
   new_start_date: Date,
   discountId: number,
+  eventName: string,
   supabase: SupabaseClient
 ):Promise<void> => { 
   const previousActiveEvent = await getCurrentActiveEvent(supabase);
@@ -90,5 +91,5 @@ export const changeActiveEvent = async (
     }
   }
   // Adds a new date range for the new event
-  await addDiscountDateRange(discountId, new_start_date, null, supabase);
+  await addDiscountDateRange(discountId, eventName, new_start_date, null, supabase);
 }
