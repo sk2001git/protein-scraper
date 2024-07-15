@@ -98,5 +98,5 @@ export const changeActiveEvent = async (
   }
 
   // Add a new date range for the new event
-  await addDiscountDateRange(discountId, eventName, new_start_date, null, supabase);
+  await addDiscountDateRange(discountId, new_start_date, null, supabase);
 }

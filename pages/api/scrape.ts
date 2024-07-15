@@ -3,7 +3,7 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server'
 import { IncomingHttpHeaders } from 'http';
-import { cheerioScrapeProductDetails, updateProduct } from '@/backend/api/product';
+import { cheerioScrapeProductDetails, scrapeProductOffers, updateProduct } from '@/backend/api/product';
 import { insertPrice } from '@/backend/api/price';
 import { changeActiveEvent } from '@/backend/api/active-events';
 import { triggerDiscounts } from '@/backend/api/discounts';
@@ -86,6 +86,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!); // Client must be created inside the handler to avoid serverless function cold starts
     const productDetails = await cheerioScrapeProductDetails(productUrl!);
+    const productOptions = await scrapeProductOffers(productUrl!);
 
     console.log('Product details:', productDetails); 
 
@@ -108,14 +109,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return NextResponse.json({ error: 'Failed to trigger discount workflow' }, { status: 500 });
     }
 
-    // Deal with price table which has a foreign key to product table (dependent), get all prices related to product
-    const priceList = await insertPrice(productDetails.price, product.id!, discountData?.discount_percentage!, discountData?.id!, supabase);
-    if (priceList instanceof NextResponse) {
-      return priceList;
+    // Deal with price by inserting a price related to each option and the current discount
+    for (const option of productOptions) {
+      const priceList = await insertPrice(option.price!, product.id!, discountData.id!, option.dataOptionsId!, supabase);
+      if (priceList instanceof NextResponse) {
+        return priceList;
+      }
     }
 
 
-    return NextResponse.json({ product, priceList, productDetails })
+
+    return NextResponse.json({ product, productOptions, productDetails })
 
   } catch (error) {
     console.error('Error during scrape process:', error);
