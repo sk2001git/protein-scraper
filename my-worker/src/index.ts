@@ -14,7 +14,6 @@ import { ScheduledController } from "@cloudflare/workers-types/experimental";
 import { ExecutionContext } from "@cloudflare/workers-types/experimental";
 
 export interface Env {
-	MYBROWSER: Fetcher;
   CRON_SECRET: string;
   NEXTJS_API_URL: string; 
 }
