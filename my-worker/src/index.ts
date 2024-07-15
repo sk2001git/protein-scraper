@@ -14,6 +14,7 @@ import { ScheduledController } from "@cloudflare/workers-types/experimental";
 import { ExecutionContext } from "@cloudflare/workers-types/experimental";
 
 export interface Env {
+	MYBROWSER: Fetcher;
   CRON_SECRET: string;
   NEXTJS_API_URL: string; 
 }
@@ -68,6 +69,7 @@ export default {
     if (request.method === 'GET') {
       console.log('Fetch handler invoked');
       await this.scheduled( {} as ScheduledController, env, {} as ExecutionContext);
+ 
       return new Response("Fetch handler executed", {
         status: 200,
         headers: {
@@ -75,6 +77,7 @@ export default {
         },
       });
     }
+
     return new Response("Method not allowed", { status: 405 });
   }
 };

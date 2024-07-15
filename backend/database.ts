@@ -55,3 +55,37 @@ export const fetchPriceData = async (productId: Number, dateRange: DateRange | u
     discount: item.discount_percentage,
   }));
 };
+
+export const getCurrentDiscount = async () => {
+  const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
+  try {
+    const { data: activeEvent, error: activeEventError } = await supabase
+      .from('active_event')
+      .select('discount_id')
+      .single();
+
+    if (activeEventError) {
+      throw activeEventError;
+    }
+
+    const { data: discount, error: discountError } = await supabase
+      .from('discounts')
+      .select('discount_percentage')
+      .eq('id', activeEvent.discount_id)
+      .single();
+
+    if (discountError) {
+      throw discountError;
+    } 
+
+    return discount.discount_percentage;
+  } catch (error) {
+    console.error('Error fetching discount percentage:', error);
+    return null;
+  }
+}
+
+// Should return dictionary of weight and price
+export const getCurrentProteinPrice = async () => {
+  
+}
