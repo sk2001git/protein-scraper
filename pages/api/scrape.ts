@@ -3,11 +3,12 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server'
 import { IncomingHttpHeaders } from 'http';
-import { cheerioScrapeProductDetails, scrapeProductOffers, updateProduct } from '@/backend/api/product';
+import { cheerioScrapeProductDetails, scrapeProductOffers, updateOptions, updateProduct } from '@/backend/api/product';
 import { insertPrice } from '@/backend/api/price';
 import { changeActiveEvent } from '@/backend/api/active-events';
 import { triggerDiscounts } from '@/backend/api/discounts';
 import { DiscountDetails } from '@/types/discount-details';
+import { upsertURL } from '@/backend/api/url';
 
 export const runtime = 'edge';
 
@@ -101,6 +102,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return product;
     }
     console.log('Upserted product:', product);
+    // Implement update url
+    const updateUrl = await upsertURL({ product_id: product.id!, url: productUrl }, supabase);
+
+    // Implement product options as well as their relevant triggers
+    const productOptionsList = await updateOptions(productOptions, product.id!, supabase);
+
+    console.log('Product options:', productOptionsList);
 
      // Implement discount functions as well as their relevant triggers
     const discountData = await triggerDiscountWorkflow(productUrl, supabase);
@@ -110,8 +118,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // Deal with price by inserting a price related to each option and the current discount
-    for (const option of productOptions) {
-      const priceList = await insertPrice(option.price!, product.id!, discountData.id!, option.dataOptionsId!, supabase);
+    for (const option of productOptionsList) {
+      const priceList = await insertPrice(option.price!, discountData.id!, option.id!, supabase);
       if (priceList instanceof NextResponse) {
         return priceList;
       }
@@ -119,7 +127,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
 
 
-    return NextResponse.json({ product, productOptions, productDetails })
+    return NextResponse.json({ product, updateUrl, productOptions, productDetails })
 
   } catch (error) {
     console.error('Error during scrape process:', error);
