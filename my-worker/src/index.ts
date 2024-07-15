@@ -32,6 +32,7 @@ export default {
     //   'https://www.myprotein.com.sg/sports-nutrition/impact-whey-protein-powder/10530943.html',
     //   'https://www.myprotein.com.sg/sports-nutrition/clear-whey-protein-powder/12081395.html',
     // ];
+    const urls: string[] = [];
     console.log(env.NEXTJS_API_URL)
 
 
