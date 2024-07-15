@@ -27,11 +27,11 @@ export default {
     env: Env,
     ctx: ExecutionContext
   ): Promise<void> {
-    const urls = [
-      'https://www.myprotein.com.sg/sports-nutrition/crispy-protein-wafer/10961185.html',
-      'https://www.myprotein.com.sg/sports-nutrition/impact-whey-protein-powder/10530943.html',
-      'https://www.myprotein.com.sg/sports-nutrition/clear-whey-protein-powder/12081395.html',
-    ];
+    // const urls = [
+    //   'https://www.myprotein.com.sg/sports-nutrition/crispy-protein-wafer/10961185.html',
+    //   'https://www.myprotein.com.sg/sports-nutrition/impact-whey-protein-powder/10530943.html',
+    //   'https://www.myprotein.com.sg/sports-nutrition/clear-whey-protein-powder/12081395.html',
+    // ];
     console.log(env.NEXTJS_API_URL)
 
 
