@@ -19,20 +19,57 @@ interface ProductDetails {
   price: string;
   discount_percentage: number;
 }
-interface ProductOption {
-  mass: string;
-  variationId: string;
+
+interface ProductSchema {
+  '@type': string;
+  '@context': string;
+  productGroupID: string;
+  variesBy: any[];
+  name: string;
+  brand: { '@type': string; name: string };
+  description: string;
+  url: string;
+  hasVariant: Product[];
+  review: any[];
 }
 
-export interface PriceMassTag {
-  option: string;
+interface Product {
+  '@type': string;
+  '@context': string;
+  '@id': string;
+  sku: string;
+  mpn: string;
+  name: string;
+  description: string;
+  offers: Offer;
+  image: string;
+}
+
+interface Offer {
+  '@type': string;
   price: string;
-
+  priceCurrency: string;
+  url: string;
+  itemCondition: string;
+  sku: string;
+  availability: string;
 }
 
-interface ExpandedProductDetails extends ProductDetails {
-  choices: ProductOption[];
+interface PriceOption {
+  name: string,
+  dataOptionsId: number,
+  price: string,
 }
+
+interface Options {
+  id?: number;
+  product_id: number;
+  option_type: string;
+  data_option_id: number;
+  price: string;
+}
+
+
 
 /**
  * Scrapes the information currently from the product page for my-protein specifcally
@@ -82,14 +119,15 @@ export const cheerioScrapeProductDetails = async (url: string): Promise<ProductD
  * @param supabase 
  * @returns The updated product details else a NextResponse denoting an error 
  */
-export const updateProduct = async (productDetails: ProductDetails, supabase: SupabaseClient): Promise<NextResponse | ProductDetails> => {
+export const updateProduct = async (productDetails: ProductDetails, url_id: number, supabase: SupabaseClient): Promise<NextResponse | ProductDetails> => {
   const { data: product, error: upsertError, status: upsertStatus } = await supabase
   .from('product')
   .upsert(
     {
       name: productDetails.title,
       description: productDetails.subtitle,
-      updatedat: new Date()
+      updatedat: new Date(),
+      url_id: url_id,
     },
     { onConflict: 'name' }
   )
@@ -103,3 +141,89 @@ export const updateProduct = async (productDetails: ProductDetails, supabase: Su
   }
   return product;
 };
+
+/**
+ * Scrapes the product schema from the product page
+ * @param url The URL of the product page
+ * @returns The product schema
+ */
+export const scrapeProductOffers = async (url: string): Promise<PriceOption[]> => {
+  try {
+    const { data } = await axios.get(url);
+    const $ = cheerio.load(data);
+
+    const productSchemaScript = $('#productSchema').html();
+
+    if (!productSchemaScript) {
+      throw new Error('Product schema script not found');
+    }
+
+    const productData: ProductSchema = JSON.parse(productSchemaScript);
+
+    const productsWithOffers = productData.hasVariant.map(product => {
+      return {
+        name: product.name,
+        id: product['@id'],
+        offers: product.offers,
+        price: product.offers.price,
+      };
+    });
+
+    // Log the extracted product IDs and their offers
+    // console.log(productsWithOffers);
+    if (!productsWithOffers) {
+      console.log('No products with offers found');
+      return [];
+    }
+    return productsWithOffers.map((product) => {
+      return {
+        name: product.name,
+        dataOptionsId: parseInt(product.id),
+        price: product.price,
+      };
+    });
+  } catch (error) {
+    console.error('Error scraping product data:', error);
+    throw error;
+  }
+}
+
+/**
+ * Updates the options table for the product
+ * @param options  The options to be updated
+ * @param productId The ID of the product
+ * @param supabase  The Supabase client 
+ * @returns  The updated options else a NextResponse denoting an error
+ */
+export const updateOptions = async (options: PriceOption[], productId: number, supabase: SupabaseClient): Promise<Options[]> => {
+  const results: Options[] = [];
+
+  for (const option of options) {
+    const { data, error, status } = await supabase
+      .from('product_options')
+      .upsert(
+        {
+          product_id: productId,
+          option_type: option.name,
+          data_option_id: option.dataOptionsId,
+        },
+        { onConflict:'product_id, option_type' }
+      )
+      .select('id, product_id, option_type, data_option_id');
+
+
+    if (error) {
+      console.error('Error upserting options:', error);
+      throw error;
+    }
+    if (data) {
+      const updatedData = data.map((item: any) => ({
+        ...item,
+        price: option.price,
+      }));
+      results.push(...updatedData);
+    }
+  }
+  
+  return results;
+}

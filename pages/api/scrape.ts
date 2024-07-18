@@ -3,11 +3,12 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server'
 import { IncomingHttpHeaders } from 'http';
-import { cheerioScrapeProductDetails, updateProduct } from '@/backend/api/product';
+import { cheerioScrapeProductDetails, scrapeProductOffers, updateOptions, updateProduct } from '@/backend/api/product';
 import { insertPrice } from '@/backend/api/price';
 import { changeActiveEvent } from '@/backend/api/active-events';
 import { triggerDiscounts } from '@/backend/api/discounts';
 import { DiscountDetails } from '@/types/discount-details';
+import { upsertURL } from '@/backend/api/url';
 
 export const runtime = 'edge';
 
@@ -26,7 +27,7 @@ const triggerDiscountWorkflow = async (url:string, supabase: SupabaseClient): Pr
       console.error('Failed to trigger discount workflow: No data returned');
       return null;
     }
-    await changeActiveEvent(new Date(), data.id!, data.event_name!, supabase);
+    await changeActiveEvent(new Date(), data.id!, supabase);
     return data;
   } catch (error) {
     console.error('Error triggering discount workflow:', error);
@@ -53,11 +54,11 @@ const checkHeaders = (req: NextApiRequest): NextResponse | null => {
   }  
   const headers = req.headers as IncomingHttpHeaders;
   //@ts-ignore: Despite using the headers type as well as optional chaining, TypeScript still complains about the type of headers.get
-  // const secret = headers?.get('cron-secret');
+  const secret = headers?.get('cron-secret');
 
-  // if (!secret || secret !== process.env.CRON_SECRET) {
-  //   return NextResponse.json({ error: 'Unauthorized Accessing API' }, { status: 401 });
-  // }
+  if (!secret || secret !== process.env.CRON_SECRET) {
+    return NextResponse.json({ error: 'Unauthorized Accessing API' }, { status: 401 });
+  }
   return null;
 }
 
@@ -71,9 +72,22 @@ const getProductUrl = (req: NextApiRequest): string => {
   const queryString = url.split('?')[1];
   const params = new URLSearchParams(queryString);
   const productUrl = params.get('url');
+
   return productUrl!;
 }
 
+const getUrlId = async (supabase:SupabaseClient, url:String): Promise<number> => {
+  const { data, error } = await supabase
+    .from('urls')
+    .select('id')
+    .eq('url', url)
+    .single();
+  if (error) {
+    console.error('Error getting URL ID:', error);
+    throw new Error('Failed to get URL ID');
+  }
+  return data.id as number;
+}
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const headersCheck = checkHeaders(req); 
@@ -86,6 +100,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!); // Client must be created inside the handler to avoid serverless function cold starts
     const productDetails = await cheerioScrapeProductDetails(productUrl!);
+    const productOptions = await scrapeProductOffers(productUrl!);
 
     console.log('Product details:', productDetails); 
 
@@ -93,13 +108,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       console.error('Failed to scrape product details: Title is missing');
       return NextResponse.json({ error: 'Failed to scrape product details' }, { status: 500 });
     }
+    const url_id = await getUrlId(supabase, productUrl);
     // Deal with product table first, update the Product table with the product details
-    const product = await updateProduct(productDetails, supabase);
+    const product = await updateProduct(productDetails, url_id, supabase);
     
     if (product instanceof NextResponse) { // If the function returns a NextResponse object, it means an error occurred
       return product;
     }
     console.log('Upserted product:', product);
+
+    // Implement product options as well as their relevant triggers
+    const productOptionsList = await updateOptions(productOptions, product.id!, supabase);
+
+    console.log('Product options:', productOptionsList);
 
      // Implement discount functions as well as their relevant triggers
     const discountData = await triggerDiscountWorkflow(productUrl, supabase);
@@ -108,14 +129,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return NextResponse.json({ error: 'Failed to trigger discount workflow' }, { status: 500 });
     }
 
-    // Deal with price table which has a foreign key to product table (dependent), get all prices related to product
-    const priceList = await insertPrice(productDetails.price, product.id!, discountData?.discount_percentage!, discountData?.id!, supabase);
-    if (priceList instanceof NextResponse) {
-      return priceList;
+    // Deal with price by inserting a price related to each option and the current discount
+    for (const option of productOptionsList) {
+      const priceList = await insertPrice(option.price!, discountData.id!, option.id!, supabase);
+      if (priceList instanceof NextResponse) {
+        return priceList;
+      }
     }
 
 
-    return NextResponse.json({ product, priceList, productDetails })
+
+    return NextResponse.json({ product, productOptions, productDetails })
 
   } catch (error) {
     console.error('Error during scrape process:', error);

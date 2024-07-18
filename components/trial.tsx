@@ -1,6 +1,4 @@
 "use client";
-import { ScrapeResult } from '@/backend/scraping';
-import { jira_scrape } from '@/backend/scraping';
 import { useState } from 'react';
 
 const Home: React.FC = () => {

@@ -31,7 +31,7 @@ export async function firecrawl_scrape(url: string): Promise<ScrapeResult> {
   }
 }
 
-export async function jira_scrape(url: string): Promise<ScrapeResult> {
+export async function jina_scrape(url: string): Promise<ScrapeResult> {
   try {
     const response = await axios.get(`https://r.jina.ai/${url}`);
     return {

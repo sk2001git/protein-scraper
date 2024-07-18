@@ -38,3 +38,9 @@ next-env.d.ts
 
 # wrangler
 my-worker/.wrangler/tmp
+
+# test api endpoint
+pages/api/test
+
+# pupeteer
+backend/puppeteer
