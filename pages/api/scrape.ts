@@ -27,7 +27,7 @@ const triggerDiscountWorkflow = async (url:string, supabase: SupabaseClient): Pr
       console.error('Failed to trigger discount workflow: No data returned');
       return null;
     }
-    await changeActiveEvent(new Date(), data.id!, data.event_name!, supabase);
+    await changeActiveEvent(new Date(), data.id!, supabase);
     return data;
   } catch (error) {
     console.error('Error triggering discount workflow:', error);

@@ -32,7 +32,7 @@ const deactivateCurrentEvent = async (supabase: SupabaseClient): Promise<void> =
 const activateNewEvent = async (discount_id: number, supabase: SupabaseClient): Promise<void> => {
   const { data, error } = await supabase
     .from('active_event')
-    .upsert([{ id: 0, discount_id }]);
+    .upsert([{ id: 0, discount_id }, { onConflict: 'discount_id' }]);
 
   if (error) {
     throw error;
@@ -70,7 +70,6 @@ const getCurrentActiveEvent = async (supabase: SupabaseClient): Promise<ActiveEv
 export const changeActiveEvent = async (
   new_start_date: Date,
   discountId: number,
-  eventName: string,
   supabase: SupabaseClient
 ):Promise<void> => { 
   const previousActiveEvent = await getCurrentActiveEvent(supabase);
