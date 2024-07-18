@@ -119,7 +119,7 @@ export const cheerioScrapeProductDetails = async (url: string): Promise<ProductD
  * @param supabase 
  * @returns The updated product details else a NextResponse denoting an error 
  */
-export const updateProduct = async (productDetails: ProductDetails, supabase: SupabaseClient): Promise<NextResponse | ProductDetails> => {
+export const updateProduct = async (productDetails: ProductDetails, url_id: number, supabase: SupabaseClient): Promise<NextResponse | ProductDetails> => {
   const { data: product, error: upsertError, status: upsertStatus } = await supabase
   .from('product')
   .upsert(
@@ -127,6 +127,7 @@ export const updateProduct = async (productDetails: ProductDetails, supabase: Su
       name: productDetails.title,
       description: productDetails.subtitle,
       updatedat: new Date(),
+      url_id: url_id,
     },
     { onConflict: 'name' }
   )
@@ -151,17 +152,14 @@ export const scrapeProductOffers = async (url: string): Promise<PriceOption[]> =
     const { data } = await axios.get(url);
     const $ = cheerio.load(data);
 
-    // Select the script tag by its ID
     const productSchemaScript = $('#productSchema').html();
 
     if (!productSchemaScript) {
       throw new Error('Product schema script not found');
     }
 
-    // Parse the JSON data
     const productData: ProductSchema = JSON.parse(productSchemaScript);
 
-    // Extract product IDs and their offers
     const productsWithOffers = productData.hasVariant.map(product => {
       return {
         name: product.name,
@@ -172,7 +170,7 @@ export const scrapeProductOffers = async (url: string): Promise<PriceOption[]> =
     });
 
     // Log the extracted product IDs and their offers
-    console.log(productsWithOffers);
+    // console.log(productsWithOffers);
     if (!productsWithOffers) {
       console.log('No products with offers found');
       return [];
@@ -209,7 +207,7 @@ export const updateOptions = async (options: PriceOption[], productId: number, s
           option_type: option.name,
           data_option_id: option.dataOptionsId,
         },
-        { onConflict:'product_id,option_type' }
+        { onConflict:'product_id, option_type' }
       )
       .select('id, product_id, option_type, data_option_id');
 

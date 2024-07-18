@@ -12,10 +12,14 @@
 
 import { ScheduledController } from "@cloudflare/workers-types/experimental";
 import { ExecutionContext } from "@cloudflare/workers-types/experimental";
+import { scrapeAndReturnAllProductUrls } from "./recursive_scraper/categorical_scrape";
+import { createClient} from "@supabase/supabase-js";
 
 export interface Env {
   CRON_SECRET: string;
   NEXTJS_API_URL: string; 
+  NEXT_PUBLIC_SUPABASE_URL: string;
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: string;
 }
 
 // npx wrangler dev my-worker/src/index.ts --test-scheduled   command to test
@@ -27,13 +31,8 @@ export default {
     env: Env,
     ctx: ExecutionContext
   ): Promise<void> {
-    const urls = [
-      'https://www.myprotein.com.sg/sports-nutrition/crispy-protein-wafer/10961185.html',
-      'https://www.myprotein.com.sg/sports-nutrition/impact-whey-protein-powder/10530943.html',
-      'https://www.myprotein.com.sg/sports-nutrition/clear-whey-protein-powder/12081395.html',
-    ];
-    console.log(env.NEXTJS_API_URL)
-
+    const supabase = createClient(env.NEXT_PUBLIC_SUPABASE_URL!, env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
+    const urls = await scrapeAndReturnAllProductUrls(supabase);
 
     for (const url of urls) {
       try {

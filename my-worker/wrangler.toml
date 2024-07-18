@@ -9,7 +9,7 @@ compatibility_flags = [ "nodejs_compat" ]
 vars = { NEXTJS_API_URL = "https://protein-scraper.pages.dev" }
 
 [env.development]
-vars = { NEXTJS_API_URL = "http://localhost:3000", CRON_SECRET = "GP6qA5YlQXjcAI0OXWd5X8oADjhLB4I6" }
+vars = { NEXTJS_API_URL = "http://localhost:3000", CRON_SECRET = "GP6qA5YlQXjcAI0OXWd5X8oADjhLB4I6", NEXT_PUBLIC_SUPABASE_URL="https://tldxnsjoqkxfmeuikcro.supabase.co", NEXT_PUBLIC_SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRsZHhuc2pvcWt4Zm1ldWlrY3JvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTcxNzc2Mzk4MiwiZXhwIjoyMDMzMzM5OTgyfQ.rovqHNMXbMZVvhOj49zKVvqpBr2hKjAya39uwhgBxEA"  }
 
 
 

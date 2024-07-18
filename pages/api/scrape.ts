@@ -54,11 +54,11 @@ const checkHeaders = (req: NextApiRequest): NextResponse | null => {
   }  
   const headers = req.headers as IncomingHttpHeaders;
   //@ts-ignore: Despite using the headers type as well as optional chaining, TypeScript still complains about the type of headers.get
-  // const secret = headers?.get('cron-secret');
+  const secret = headers?.get('cron-secret');
 
-  // if (!secret || secret !== process.env.CRON_SECRET) {
-  //   return NextResponse.json({ error: 'Unauthorized Accessing API' }, { status: 401 });
-  // }
+  if (!secret || secret !== process.env.CRON_SECRET) {
+    return NextResponse.json({ error: 'Unauthorized Accessing API' }, { status: 401 });
+  }
   return null;
 }
 
@@ -72,9 +72,22 @@ const getProductUrl = (req: NextApiRequest): string => {
   const queryString = url.split('?')[1];
   const params = new URLSearchParams(queryString);
   const productUrl = params.get('url');
+
   return productUrl!;
 }
 
+const getUrlId = async (supabase:SupabaseClient, url:String): Promise<number> => {
+  const { data, error } = await supabase
+    .from('urls')
+    .select('id')
+    .eq('url', url)
+    .single();
+  if (error) {
+    console.error('Error getting URL ID:', error);
+    throw new Error('Failed to get URL ID');
+  }
+  return data.id as number;
+}
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const headersCheck = checkHeaders(req); 
@@ -95,15 +108,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       console.error('Failed to scrape product details: Title is missing');
       return NextResponse.json({ error: 'Failed to scrape product details' }, { status: 500 });
     }
+    const url_id = await getUrlId(supabase, productUrl);
     // Deal with product table first, update the Product table with the product details
-    const product = await updateProduct(productDetails, supabase);
+    const product = await updateProduct(productDetails, url_id, supabase);
     
     if (product instanceof NextResponse) { // If the function returns a NextResponse object, it means an error occurred
       return product;
     }
     console.log('Upserted product:', product);
-    // Implement update url
-    const updateUrl = await upsertURL({ product_id: product.id!, url: productUrl }, supabase);
 
     // Implement product options as well as their relevant triggers
     const productOptionsList = await updateOptions(productOptions, product.id!, supabase);
@@ -127,7 +139,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
 
 
-    return NextResponse.json({ product, updateUrl, productOptions, productDetails })
+    return NextResponse.json({ product, productOptions, productDetails })
 
   } catch (error) {
     console.error('Error during scrape process:', error);
