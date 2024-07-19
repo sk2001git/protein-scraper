@@ -50,14 +50,17 @@ export const fetchPriceData = async (productId: Number, dateRange: DateRange | u
     throw error;
   }
 
-  const resolvedPromises = await Promise.all(data.map(async (item) => {
-    const {data, error} = await supabase.from('discounts').select('discount_percentage').eq('id', item.discount_id).single();
-    const product = {
-      date: new Date(item.timestamp).toLocaleDateString('en-US'),
-      Price: item.price,
-      discount: data?.discount_percentage
-    };
-    return product;
+  const resolvedPromises = await Promise.all(
+    
+    data.map(async (item) => {
+      const {data, error} = await supabase.from('discounts').select('discount_percentage').eq('id', item.discount_id).single();
+
+      const product = {
+        date: new Date(item.timestamp).toLocaleDateString('en-US'),
+        Price: item.price,
+        discount: data?.discount_percentage
+      };
+      return product;
   }));
   
   return resolvedPromises;
