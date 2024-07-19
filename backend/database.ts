@@ -38,7 +38,7 @@ export const fetchProductIds = async (): Promise<Product[]> => {
 
 export const fetchPriceData = async (productId: Number, dateRange: DateRange | undefined): Promise<PriceOverTime[]> => {
   const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
-  let query = supabase.from('price').select('price, timestamp, discount_percentage').eq('productid', productId);
+  let query = supabase.from('price').select('price, timestamp, discount_id').eq('productid', productId);
 
   if (dateRange?.from && dateRange?.to) {
     query = query.gte('timestamp', dateRange.from.toISOString()).lte('timestamp', dateRange.to.toISOString());
@@ -49,11 +49,21 @@ export const fetchPriceData = async (productId: Number, dateRange: DateRange | u
     console.error('Error fetching data:', error);
     throw error;
   }
-  return data.map((item) => ({
-    date: new Date(item.timestamp).toLocaleDateString('en-US'),
-    Price: item.price,
-    discount: item.discount_percentage,
+
+  const resolvedPromises = await Promise.all(
+    
+    data.map(async (item) => {
+      const {data, error} = await supabase.from('discounts').select('discount_percentage').eq('id', item.discount_id).single();
+
+      const product = {
+        date: new Date(item.timestamp).toLocaleDateString('en-US'),
+        Price: item.price,
+        discount: data?.discount_percentage
+      };
+      return product;
   }));
+  
+  return resolvedPromises;
 };
 
 export const getCurrentDiscount = async () => {
