@@ -29,6 +29,7 @@ const chartConfig = {
     label: "Myprotein",
     color: "hsl(var(--chart-1))",
   },
+ 
 } satisfies ChartConfig;
 
 function calculateMinPriceDate(data: ChartData[]) {
@@ -40,15 +41,15 @@ function calculateMinPriceDate(data: ChartData[]) {
 export function PriceChart({ data }: { data: ChartData[] }) {
   
   return (
-    <Card>
+    <Card className="">
       <CardHeader>
         <CardTitle>Area Chart - Stacked</CardTitle>
         <CardDescription>
           Showing total visitors for the last 6 months
         </CardDescription>
       </CardHeader>
-      <CardContent>
-        <ChartContainer config={chartConfig}>
+      <CardContent className="h-96">
+        <ChartContainer config={chartConfig} className="h-full w-full" >
           <AreaChart
             accessibilityLayer
             data={data}
@@ -56,6 +57,8 @@ export function PriceChart({ data }: { data: ChartData[] }) {
               left: 12,
               right: 12,
             }}
+
+            
           >
             <CartesianGrid vertical={false} />
             <XAxis
