@@ -22,8 +22,8 @@ import { Product } from "@/components/chart/chart";
 
 interface SearchBoxProps {
   products: Product[];
-  productId: Number | 0;
-  setProductId: (productId: Number) => void;
+  productId: number | 0;
+  setProductId: (productId: number) => void;
 }
 
 export function SearchBox({
@@ -46,13 +46,13 @@ export function SearchBox({
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className="w-[250px] justify-between truncate flex" // Box reference before you click
+          className="w-[360px] justify-between truncate flex" // Box reference before you click
         >
           {selectedProduct ? selectedProduct.name : "Select product..."}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[250px] p-0">
+      <PopoverContent className="w-[360px] p-0">
         <Command>
           <CommandInput
             placeholder="Search product..."

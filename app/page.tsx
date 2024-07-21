@@ -1,6 +1,5 @@
 import { Metadata } from "next"
 
-import { Button } from "@/components/ui/button"
 import {
   Card,
   CardContent,
@@ -15,6 +14,7 @@ import {
 } from "@/components/ui/tabs"
 import { LineChartHero } from "@/components/chart/chart"
 import { getCurrentDiscount } from "@/backend/database"
+import { QueryClientProvider1 } from "@/components/chart/wrapper"
 
 export const runtime = "edge";
 
@@ -26,8 +26,9 @@ export const metadata: Metadata = {
 
 export default async function DashboardPage() {
   const currentDiscount = await getCurrentDiscount();
-  const isReasonable = currentDiscount > 80;
-  
+  const nonExistent = currentDiscount === null;
+  const isReasonable = nonExistent ? false : currentDiscount >= 80;
+
 
   return (
     <>
@@ -131,7 +132,10 @@ export default async function DashboardPage() {
                   </CardContent>
                 </Card>
               </div>
-              <LineChartHero />
+              <QueryClientProvider1>
+                <LineChartHero />
+
+              </QueryClientProvider1>
             </TabsContent>
           </Tabs>
         </div>
