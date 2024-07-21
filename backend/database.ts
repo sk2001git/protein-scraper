@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { createBrowserClient } from '@supabase/ssr';
 import { DateRange } from "react-day-picker";
 import { z } from 'zod';
 
@@ -60,7 +60,7 @@ const OptionIdsSchema = z.array(OptionIdSchema);
  */
 
 export const fetchProductIds = async (): Promise<Product[]> => {
-  const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
+  const supabase = createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
   const { data, error } = await supabase.from('product').select('id, name');
   if (error) {
     console.error('Error fetching product IDs:', error);
@@ -70,7 +70,7 @@ export const fetchProductIds = async (): Promise<Product[]> => {
 };
 
 export const fetchOptions = async (productId: number): Promise<Option[]> => {
-  const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
+  const supabase = createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
   const { data, error } = await supabase.from('product_options').select('id, product_id, option_type, data_option_id').eq('product_id', productId);
   if (error) {
     console.error('Error fetching product IDs:', error);
@@ -88,7 +88,7 @@ export const fetchOptions = async (productId: number): Promise<Option[]> => {
  */
 
 // export const fetchPriceData = async (productId: Number, dateRange: DateRange | undefined): Promise<PriceOverTime[]> => {
-//   const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
+//   const supabase = createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
 //   let query = supabase.from('price').select('price, timestamp, discount_id').eq('productid', productId);
 
 //   if (dateRange?.from && dateRange?.to) {
@@ -118,7 +118,7 @@ export const fetchOptions = async (productId: number): Promise<Option[]> => {
 // };
 
 export async function getPricesWithDiscounts(option_id: number, dateRange: DateRange | undefined) {
-  const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
+  const supabase = createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
   let query = supabase
     .from('price')
     .select(`
@@ -170,7 +170,7 @@ export async function getPricesWithDiscounts(option_id: number, dateRange: DateR
 }
 
 // export const getCurrentDiscount = async () => {
-//   const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
+//   const supabase = createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
 //   try {
 //     const { data: activeEvent, error: activeEventError } = await supabase
 //       .from('active_event')
@@ -199,7 +199,7 @@ export async function getPricesWithDiscounts(option_id: number, dateRange: DateR
 // }
 
 export const getCurrentDiscount = async (): Promise<number | null> => {
-  const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
+  const supabase = createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
   try {
 
     const { data: responseData, error: responseError } = await supabase
