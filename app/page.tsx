@@ -132,7 +132,10 @@ export default async function DashboardPage() {
                   </CardContent>
                 </Card>
               </div>
-              <LineChartHero />
+              <QueryClientProvider1>
+                <LineChartHero />
+
+              </QueryClientProvider1>
             </TabsContent>
           </Tabs>
         </div>

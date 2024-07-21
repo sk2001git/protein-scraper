@@ -5,12 +5,11 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { CalendarDateRangePicker } from '@/components/date-range-picker';
 import { DateRange } from "react-day-picker";
 import { addDays} from 'date-fns';
-import {fetchOptions, fetchProductIds, getPricesWithDiscounts, optionSchema, Option} from "@/backend/database"
+import {fetchOptions, fetchProductIds, getPricesWithDiscounts, Option} from "@/backend/database"
 import { OptionSelect } from '../options-dropdown';
 import { PriceChart } from './cnchart';
 import { z } from 'zod';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-
+import { useQuery } from '@tanstack/react-query';
 
 
 export interface Product {
@@ -27,7 +26,6 @@ const chartSchema = z.object({
 
 type ChartData = z.infer<typeof chartSchema>;
 
-const queryClient = new QueryClient()
 
 
 
@@ -35,71 +33,36 @@ export function LineChartHero() {
   const today = new Date();
   const oneWeekAgo = addDays(today, -7);
 
-  const [chartData, setChartData] = useState<ChartData[]>([]);
-  const [productId, setProductId] = useState<number>(1); 
-  const [products, setProducts] = useState<Product[]>([]);
-  const [options, setOptions] = useState<Option[]>([]);
+  const [productId, setProductId] = useState<number>(1);
   const [optionId, setOptionId] = useState<number | null>(null);
-
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: oneWeekAgo,
     to: today,
   });
-  const [loading, setLoading] = useState<boolean>(true);
 
+  const { data: products = [] } = useQuery<Product[]>({
+    queryKey: ['products'],
+    queryFn: fetchProductIds,
+  });
 
-  useEffect(() => {
-    const loadProducts = async () => {
-      try {
-        const data = await fetchProductIds();
-        setProducts(data);
-        console.log(data);
-      } catch (error) {
-        console.error('Error loading products:', error);
-      }
-    };
-    loadProducts();
-  }, []);
+  const { data: options = [] } = useQuery<Option[]>({
+    queryKey: ['options', productId],
+    queryFn: () => fetchOptions(productId),
+    enabled: !!productId,
+  });
 
-  useEffect(() => {
-    const loadOptions = async (productid: number) => {
-      try {
-        const data = await fetchOptions(productid);
-        setOptions(data);
-      } catch (error) {
-        console.error('Error loading option:', error);
-      }
-    }
-    loadOptions(productId);
-  }, [productId]);
-
-  
-  useEffect(() => {
-    const loadPriceData = async () => {
-      if (optionId === null) {
-        setChartData([]);
-        return;
-      }
-      try {
-        setLoading(true);
-        const data = await getPricesWithDiscounts(optionId, dateRange);
-        console.log('Fetched price data:', data);
-        const discountedData: ChartData[] = data.map((item) => ({
-          date: item.timestamp,
-          price: parseFloat(item.finalPrice.toFixed(2)),
-        }));
-        setChartData(discountedData);
-      } catch (error) {
-        console.error('Error loading price data:', error);
-        setChartData([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadPriceData();
-  }, [optionId, dateRange]);
-
+  const { data: chartData = [], isLoading } = useQuery<ChartData[]>({
+    queryKey: ['priceData', optionId, dateRange],
+    queryFn: async () => {
+      if (optionId === null) return [];
+      const data = await getPricesWithDiscounts(optionId, dateRange);
+      return data.map((item) => ({
+        date: item.timestamp,
+        price: parseFloat(item.finalPrice.toFixed(2)),
+      }));
+    },
+    enabled: !!optionId && !!dateRange,
+  });
   return (
     <div>
       <div className="flex space-x-4">
@@ -116,7 +79,7 @@ export function LineChartHero() {
      
       <CalendarDateRangePicker className="my-4" onChange={setDateRange} />
       <Suspense fallback={<div className="h-80 w-full">Loading.... </div>}>
-        {loading ? (
+        {isLoading  ? (
           <Skeleton className="h-80 w-full bg-white" />
         ) : chartData.length > 0 ? (
           <PriceChart data={chartData} />
