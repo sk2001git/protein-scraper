@@ -38,8 +38,10 @@ function calculateMinPriceDate(data: ChartData[]) {
   );
 }
 
+
+
 export function PriceChart({ data }: { data: ChartData[] }) {
-  
+
   return (
     <Card className="">
       <CardHeader>
@@ -73,6 +75,7 @@ export function PriceChart({ data }: { data: ChartData[] }) {
               axisLine={false}
               tickMargin={8}
               tickFormatter={(value) => `$${value}`}
+              domain={['auto', 'auto']}
             />
             <Tooltip
               cursor={false}
@@ -94,7 +97,7 @@ export function PriceChart({ data }: { data: ChartData[] }) {
         <div className="flex w-full items-start gap-2 text-sm">
           <div className="grid gap-2">
             <div className="flex items-center gap-2 font-medium leading-none">
-              Minimum Price {calculateMinPriceDate(data).price}
+              Minimum Price: ${calculateMinPriceDate(data).price}
             </div>
             <div className="flex items-center gap-2 leading-none text-muted-foreground">
               Best date to buy {format(new Date(calculateMinPriceDate(data).date), 'MMM dd, yyyy')}
