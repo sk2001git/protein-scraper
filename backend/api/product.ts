@@ -81,8 +81,8 @@ export const cheerioScrapeProductDetails = async (url: string): Promise<ProductD
     const { data } = await axios.get(url);
     const $ = cheerio.load(data);
 
-    const title = $('h1.productName_title').first().text().trim();
-    const subtitle = $('p.productName_subtitle').first().text().trim();
+    const title = $('h1.productName_title').text().trim();
+    const subtitle = $('p.productName_subtitle').text().trim();
     const before_discount = $('p.productPrice_rrp.productPrice_rrp_colour').first().text().trim() || '0.00';
     const save = $('productPrice_savingAmount.productPrice_savingAmount_colour').first().text().trim() || '0.00';
     const price = $('p.productPrice_price').text().trim();
@@ -196,34 +196,22 @@ export const scrapeProductOffers = async (url: string): Promise<PriceOption[]> =
  * @returns  The updated options else a NextResponse denoting an error
  */
 export const updateOptions = async (options: PriceOption[], productId: number, supabase: SupabaseClient): Promise<Options[]> => {
-  const results: Options[] = [];
+  const upsertData = options.map(option => ({
+    product_id: productId,
+    option_type: option.name,
+    data_option_id: option.dataOptionsId,
+    price: option.price // Include price in the upsert data
+  }));
 
-  for (const option of options) {
-    const { data, error, status } = await supabase
-      .from('product_options')
-      .upsert(
-        {
-          product_id: productId,
-          option_type: option.name,
-          data_option_id: option.dataOptionsId,
-        },
-        { onConflict:'product_id, option_type' }
-      )
-      .select('id, product_id, option_type, data_option_id');
+  const { data, error } = await supabase
+    .from('product_options')
+    .upsert(upsertData, { onConflict: 'product_id, option_ type' })
+    .select('id, product_id, option_type, data_option_id, price');
 
-
-    if (error) {
-      console.error('Error upserting options:', error);
-      throw error;
-    }
-    if (data) {
-      const updatedData = data.map((item: any) => ({
-        ...item,
-        price: option.price,
-      }));
-      results.push(...updatedData);
-    }
+  if (error) {
+    console.error('Error upserting options:', error);
+    throw error;
   }
-  
-  return results;
+
+  return data || [];
 }

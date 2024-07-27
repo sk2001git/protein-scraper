@@ -4,11 +4,10 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server'
 import { IncomingHttpHeaders } from 'http';
 import { cheerioScrapeProductDetails, scrapeProductOffers, updateOptions, updateProduct } from '@/backend/api/product';
-import { insertPrice } from '@/backend/api/price';
+import { insertPrices } from '@/backend/api/price';
 import { changeActiveEvent } from '@/backend/api/active-events';
 import { triggerDiscounts } from '@/backend/api/discounts';
 import { DiscountDetails } from '@/types/discount-details';
-import { upsertURL } from '@/backend/api/url';
 
 export const runtime = 'edge';
 
@@ -54,7 +53,7 @@ const checkHeaders = (req: NextApiRequest): NextResponse | null => {
   }  
   const headers = req.headers as IncomingHttpHeaders;
   //@ts-ignore: Despite using the headers type as well as optional chaining, TypeScript still complains about the type of headers.get
-  const secret = headers?.get('cron-secret');
+  const secret = headers?.get('Cron-Secret');
 
   if (!secret || secret !== process.env.CRON_SECRET) {
     return NextResponse.json({ error: 'Unauthorized Accessing API' }, { status: 401 });
@@ -99,8 +98,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!); // Client must be created inside the handler to avoid serverless function cold starts
-    const productDetails = await cheerioScrapeProductDetails(productUrl!);
-    const productOptions = await scrapeProductOffers(productUrl!);
+
+    const [productDetails, productOptions, url_id] = await Promise.all([
+      cheerioScrapeProductDetails(productUrl!),
+      scrapeProductOffers(productUrl!),
+      getUrlId(supabase, productUrl)
+    ]);
 
     console.log('Product details:', productDetails); 
 
@@ -108,7 +111,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       console.error('Failed to scrape product details: Title is missing');
       return NextResponse.json({ error: 'Failed to scrape product details' }, { status: 500 });
     }
-    const url_id = await getUrlId(supabase, productUrl);
     // Deal with product table first, update the Product table with the product details
     const product = await updateProduct(productDetails, url_id, supabase);
     
@@ -130,11 +132,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // Deal with price by inserting a price related to each option and the current discount
-    for (const option of productOptionsList) {
-      const priceList = await insertPrice(option.price!, discountData.id!, option.id!, supabase);
-      if (priceList instanceof NextResponse) {
-        return priceList;
-      }
+    const priceData = productOptionsList.map(option => ({
+      price: parseFloat(option.price!.replace(/[^0-9.-]+/g, "")),
+      discount_id: discountData.id!,
+      option_id: option.id!
+    }));
+
+    const priceList = await insertPrices(priceData, supabase);
+    if (priceList instanceof NextResponse) {
+      return priceList; 
     }
 
 
