@@ -23,7 +23,7 @@ export const upsertURL = async (urlUpdate: URLUpdate, supabase: SupabaseClient):
         url: url,
         last_scraped_at: new Date(),
       },
-      { onConflict: 'product_id' }
+      { onConflict: 'product_id', ignoreDuplicates: false }
     )
     .select();
 

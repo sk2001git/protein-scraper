@@ -58,7 +58,7 @@ const getExistingDiscount = async (eventName: string, supabase: SupabaseClient )
 const upsertDiscount = async (eventName: string, discountPercentage: number, supabase: SupabaseClient): Promise<DiscountDetails> => {
   const { data, error } = await supabase
     .from('discounts')
-    .upsert([{ event_name: eventName, discount_percentage: discountPercentage }], { onConflict: 'event_name' })
+    .upsert([{ event_name: eventName, discount_percentage: discountPercentage }], { onConflict: 'event_name', ignoreDuplicates: false})
     .select('id, event_name, discount_percentage, created_at')
     .single();
   if (error) {

@@ -81,8 +81,8 @@ export const cheerioScrapeProductDetails = async (url: string): Promise<ProductD
     const { data } = await axios.get(url);
     const $ = cheerio.load(data);
 
-    const title = $('h1.productName_title').text().trim();
-    const subtitle = $('p.productName_subtitle').text().trim();
+    const title = $('h1.productName_title').first().text().trim();
+    const subtitle = $('p.productName_subtitle').first().text().trim();
     const before_discount = $('p.productPrice_rrp.productPrice_rrp_colour').first().text().trim() || '0.00';
     const save = $('productPrice_savingAmount.productPrice_savingAmount_colour').first().text().trim() || '0.00';
     const price = $('p.productPrice_price').text().trim();
@@ -129,7 +129,7 @@ export const updateProduct = async (productDetails: ProductDetails, url_id: numb
       updatedat: new Date(),
       url_id: url_id,
     },
-    { onConflict: 'name' }
+    { onConflict: 'name', ignoreDuplicates: false }
   )
   .select()
   .single();
@@ -196,22 +196,55 @@ export const scrapeProductOffers = async (url: string): Promise<PriceOption[]> =
  * @returns  The updated options else a NextResponse denoting an error
  */
 export const updateOptions = async (options: PriceOption[], productId: number, supabase: SupabaseClient): Promise<Options[]> => {
-  const upsertData = options.map(option => ({
+  const seen = new Set<string>();
+  
+  // Filter options to remove duplicates based on combination of option.name and option.dataOptionsId
+  const uniqueOptions = options.filter(option => {
+    const key = `${productId}-${option.name}-${option.dataOptionsId}`;
+    if (seen.has(key)) {
+      return false; 
+    }
+    seen.add(key); 
+    return true;
+  });
+
+
+  const upsertData = uniqueOptions.map(option => ({
     product_id: productId,
     option_type: option.name,
     data_option_id: option.dataOptionsId,
-    price: option.price // Include price in the upsert data
   }));
-
-  const { data, error } = await supabase
+  
+  const { data: unused , error } = await supabase
     .from('product_options')
-    .upsert(upsertData, { onConflict: 'product_id, option_ type' })
-    .select('id, product_id, option_type, data_option_id, price');
+    .upsert(upsertData, { onConflict: 'product_id, option_type', ignoreDuplicates: true })
+
+  const { data, error: fetchError } = await supabase
+    .from('product_options')
+    .select('id, product_id, option_type, data_option_id')
+    .eq('product_id', productId);
 
   if (error) {
     console.error('Error upserting options:', error);
     throw error;
   }
 
-  return data || [];
+  const results: Options[] = [];
+  if (data) {
+    data.forEach((item: any) => {
+      for (const option of options) {
+        if (item.option_type === option.name && item.data_option_id === option.dataOptionsId) {
+          results.push({
+            id: item.id,
+            product_id: item.product_id,
+            option_type: item.option_type,
+            data_option_id: item.data_option_id,
+            price: option.price,
+          });
+        }
+      }
+    });
+  }
+
+  return results || [];
 }
