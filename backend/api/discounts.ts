@@ -76,8 +76,7 @@ const upsertDiscount = async (eventName: string, discountPercentage: number, sup
  * @param supabase The Supabase client
  * @returns The discount details
  */
-export const triggerDiscounts = async (url: string, supabase: SupabaseClient): Promise<DiscountDetails> => {
-  const discountDetails = await cheerioScrapeDiscountDetails(url);
+export const triggerDiscounts = async (url: string, supabase: SupabaseClient, discountDetails: DiscountDetails): Promise<DiscountDetails> => {
   if (!discountDetails.event_name) {
     throw new Error('No event name detected');
   }

@@ -3,7 +3,7 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server'
 import { IncomingHttpHeaders } from 'http';
-import { cheerioScrapeProductDetails, scrapeProductOffers, updateOptions, updateProduct } from '@/backend/api/product';
+import { cheerioScrapeProductDetails, scrapeAllInformation, scrapeProductOffers, updateOptions, updateProduct } from '@/backend/api/product';
 import { insertPrices } from '@/backend/api/price';
 import { changeActiveEvent } from '@/backend/api/active-events';
 import { triggerDiscounts } from '@/backend/api/discounts';
@@ -17,16 +17,24 @@ export const runtime = 'edge';
  * @param supabase The supabase client to be re-used
  * @returns data regarding discount details such as the event_name, and discount_percentage
  */
-const triggerDiscountWorkflow = async (url:string, supabase: SupabaseClient): Promise<DiscountDetails | null> => { 
+const triggerDiscountWorkflow = async (url:string, supabase: SupabaseClient, discountDetails: DiscountDetails): Promise<DiscountDetails | null> => { 
   // This triggers the check for discounts, creating them if not present, and then returning the discount object 
   try {
-    const data = await triggerDiscounts(url, supabase);
+    let start = performance.now();
+
+    const data = await triggerDiscounts(url, supabase, discountDetails);
+
+    let end = performance.now();
+    console.log(`triggerDiscounts execution time: ${end - start} milliseconds`);
     // We then update the active_event with the discount id as well as the discount_date_ranges table
     if (!data || !data.id){
       console.error('Failed to trigger discount workflow: No data returned');
       return null;
     }
+    start = performance.now();
     await changeActiveEvent(new Date(), data.id!, supabase);
+    end = performance.now();
+    console.log(`changeActiveEvent execution time: ${end - start} milliseconds`);
     return data;
   } catch (error) {
     console.error('Error triggering discount workflow:', error);
@@ -55,12 +63,12 @@ const checkHeaders = (req: NextApiRequest): NextResponse | null => {
   //@ts-ignore: Despite using the headers type as well as optional chaining, TypeScript still complains about the type of headers.get
   const secret = headers?.get('Cron-Secret');
 
-  if (!secret || secret !== process.env.CRON_SECRET) {
-    return NextResponse.json({ error: 'Unauthorized Accessing API' }, { status: 401 });
-  }
-  // if (!secret || secret !== 'GP6qA5YlQXjcAI0OXWd5X8oADjhLB4I6') {
+  // if (!secret || secret !== process.env.CRON_SECRET) {
   //   return NextResponse.json({ error: 'Unauthorized Accessing API' }, { status: 401 });
   // }
+  if (!secret || secret !== 'GP6qA5YlQXjcAI0OXWd5X8oADjhLB4I6') {
+    return NextResponse.json({ error: 'Unauthorized Accessing API' }, { status: 401 });
+  }
   
   return null;
 }
@@ -80,11 +88,14 @@ const getProductUrl = (req: NextApiRequest): string => {
 }
 
 const getUrlId = async (supabase:SupabaseClient, url:String): Promise<number> => {
+  const start = performance.now();
   const { data, error } = await supabase
     .from('urls')
     .select('id')
     .eq('url', url)
     .single();
+  const end = performance.now();
+  console.log(`getUrlId execution time: ${end - start} milliseconds`);
   if (error) {
     console.error('Error getting URL ID:', error);
     throw new Error('Failed to get URL ID');
@@ -93,6 +104,7 @@ const getUrlId = async (supabase:SupabaseClient, url:String): Promise<number> =>
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  const totalStart = performance.now();
   const headersCheck = checkHeaders(req); 
   if (headersCheck) {
     return headersCheck;
@@ -103,9 +115,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!); // Client must be created inside the handler to avoid serverless function cold starts
 
-    const [productDetails, productOptions, url_id] = await Promise.all([
-      cheerioScrapeProductDetails(productUrl!),
-      scrapeProductOffers(productUrl!),
+    const [{productDetails, priceOptions: productOptions, discountDetails}, url_id] = await Promise.all([
+      scrapeAllInformation(productUrl),
       getUrlId(supabase, productUrl)
     ]);
 
@@ -116,7 +127,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return NextResponse.json({ error: 'Failed to scrape product details' }, { status: 500 });
     }
     // Deal with product table first, update the Product table with the product details
+    let start = performance.now();
     const product = await updateProduct(productDetails, url_id, supabase);
+    let end = performance.now();
+    console.log(`updateProduct execution time: ${end - start} milliseconds`);
     
     if (product instanceof NextResponse) { // If the function returns a NextResponse object, it means an error occurred
       return product;
@@ -124,12 +138,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     console.log('Upserted product:', product);
 
     // Implement product options as well as their relevant triggers
+    start = performance.now();
     const productOptionsList = await updateOptions(productOptions, product.id!, supabase);
+    end = performance.now();
+    console.log(`updateOptions execution time: ${end - start} milliseconds`);
 
     console.log('Product options:', productOptionsList);
 
      // Implement discount functions as well as their relevant triggers
-    const discountData = await triggerDiscountWorkflow(productUrl, supabase);
+    start = performance.now();
+    const discountData = await triggerDiscountWorkflow(productUrl, supabase, discountDetails);
+    end = performance.now();
+    console.log(`triggerDiscountWorkflow execution time: ${end - start} milliseconds`);
     if (!discountData) {
       console.error('Data not returned from discount workflow');
       return NextResponse.json({ error: 'Failed to trigger discount workflow' }, { status: 500 });
@@ -142,12 +162,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       option_id: option.id!
     }));
 
+    start = performance.now();
     const priceList = await insertPrices(priceData, supabase);
+    end = performance.now();
+    console.log(`insertPrices execution time: ${end - start} milliseconds`);
+
     if (priceList instanceof NextResponse) {
       return priceList; 
     }
 
-
+    const totalEnd = performance.now();
+    console.log(`Total execution time: ${totalEnd - totalStart} milliseconds`);
 
     return NextResponse.json({ product, productOptions, productDetails })
 

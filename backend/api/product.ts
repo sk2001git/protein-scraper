@@ -69,6 +69,19 @@ interface Options {
   price: string;
 }
 
+export interface DiscountDetails {
+  id?: number;
+  event_name: string;
+  discount_percentage: number;
+  created_at?: string;
+}
+
+interface ScrapedInformation {
+  productDetails: ProductDetails;
+  priceOptions: PriceOption[];
+  discountDetails: DiscountDetails;
+}
+
 
 
 /**
@@ -188,6 +201,76 @@ export const scrapeProductOffers = async (url: string): Promise<PriceOption[]> =
   }
 }
 
+export const scrapeAllInformation = async (url: string): Promise<ScrapedInformation> => {
+  const start = performance.now();
+
+  try {
+    const startGet = performance.now();
+    const { data } = await axios.get(url);
+    const $ = cheerio.load(data);
+    const startEnd = performance.now();
+    console.log(`Cheerio load time: ${startEnd - startGet} milliseconds`);
+
+    // Scrape product details
+    const title = $('h1.productName_title').first().text().trim();
+    const subtitle = $('p.productName_subtitle').first().text().trim();
+    const before_discount = $('p.productPrice_rrp.productPrice_rrp_colour').first().text().trim() || '0.00';
+    const save = $('productPrice_savingAmount.productPrice_savingAmount_colour').first().text().trim() || '0.00';
+    const price = $('p.productPrice_price').text().trim();
+
+    // Scrape discount details
+    const discountText = $('.stripBanner_text').text().trim();
+    const discountMatch = discountText.match(/(\d+)% OFF/);
+    const discount_percentage = discountMatch ? parseInt(discountMatch[1], 10) : 0;
+    const eventMatch = discountText.match(/CODE【([^】]+)】/);
+    const event_name = eventMatch ? eventMatch[1] : '';
+
+    const productDetails: ProductDetails = {
+      title,
+      subtitle,
+      before_discount,
+      save,
+      price,
+      discount_percentage,
+    };
+
+    const discountDetails: DiscountDetails = {
+      discount_percentage,
+      event_name,
+    };
+
+    // Parse product schema
+    const productSchemaScript = $('#productSchema').html();
+    if (!productSchemaScript) {
+      throw new Error('Product schema script not found');
+    }
+
+    const productSchema: ProductSchema = JSON.parse(productSchemaScript);
+
+    const priceOptions: PriceOption[] = productSchema.hasVariant.map(variant => ({
+      name: variant.name,
+      dataOptionsId: parseInt(variant['@id']),
+      price: variant.offers.price,
+    }));
+
+    if (productSchema.productGroupID) {
+      productDetails.id = parseInt(productSchema.productGroupID);
+    }
+
+    return {
+      productDetails,
+      priceOptions,
+      discountDetails,
+    };
+
+  } catch (error) {
+    console.error('Error scraping URL:', error);
+    throw error;
+  } finally {
+    const end = performance.now();
+    console.log(`Scraping execution time: ${end - start} milliseconds`);
+  }
+};
 /**
  * Updates the options table for the product
  * @param options  The options to be updated
