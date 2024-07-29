@@ -2,6 +2,7 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 import { NextResponse } from 'next/server';
+import { parse } from 'node-html-parser';
 
 export const runtime = 'edge';
 /**
@@ -201,25 +202,98 @@ export const scrapeProductOffers = async (url: string): Promise<PriceOption[]> =
   }
 }
 
+// export const scrapeAllInformation = async (url: string): Promise<ScrapedInformation> => {
+//   const start = performance.now();
+
+//   try {
+//     const startGet = performance.now();
+//     const { data } = await axios.get(url);
+//     const $ = cheerio.load(data);
+//     const startEnd = performance.now();
+//     console.log(`Cheerio load time: ${startEnd - startGet} milliseconds`);
+
+//     // Scrape product details
+//     const title = $('h1.productName_title').first().text().trim();
+//     const subtitle = $('p.productName_subtitle').first().text().trim();
+//     const before_discount = $('p.productPrice_rrp.productPrice_rrp_colour').first().text().trim() || '0.00';
+//     const save = $('productPrice_savingAmount.productPrice_savingAmount_colour').first().text().trim() || '0.00';
+//     const price = $('p.productPrice_price').text().trim();
+
+//     // Scrape discount details
+//     const discountText = $('.stripBanner_text').text().trim();
+//     const discountMatch = discountText.match(/(\d+)% OFF/);
+//     const discount_percentage = discountMatch ? parseInt(discountMatch[1], 10) : 0;
+//     const eventMatch = discountText.match(/CODE【([^】]+)】/);
+//     const event_name = eventMatch ? eventMatch[1] : '';
+
+//     const productDetails: ProductDetails = {
+//       title,
+//       subtitle,
+//       before_discount,
+//       save,
+//       price,
+//       discount_percentage,
+//     };
+
+//     const discountDetails: DiscountDetails = {
+//       discount_percentage,
+//       event_name,
+//     };
+
+//     // Parse product schema
+//     const productSchemaScript = $('#productSchema').html();
+//     if (!productSchemaScript) {
+//       throw new Error('Product schema script not found');
+//     }
+
+//     const productSchema: ProductSchema = JSON.parse(productSchemaScript);
+
+//     const priceOptions: PriceOption[] = productSchema.hasVariant.map(variant => ({
+//       name: variant.name,
+//       dataOptionsId: parseInt(variant['@id']),
+//       price: variant.offers.price,
+//     }));
+
+//     if (productSchema.productGroupID) {
+//       productDetails.id = parseInt(productSchema.productGroupID);
+//     }
+
+//     return {
+//       productDetails,
+//       priceOptions,
+//       discountDetails,
+//     };
+
+//   } catch (error) {
+//     console.error('Error scraping URL:', error);
+//     throw error;
+//   } finally {
+//     const end = performance.now();
+//     console.log(`Scraping execution time: ${end - start} milliseconds`);
+//   }
+// };
+
 export const scrapeAllInformation = async (url: string): Promise<ScrapedInformation> => {
   const start = performance.now();
 
   try {
-    const startGet = performance.now();
-    const { data } = await axios.get(url);
-    const $ = cheerio.load(data);
-    const startEnd = performance.now();
-    console.log(`Cheerio load time: ${startEnd - startGet} milliseconds`);
+    const { data } = await axios.get(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+      }
+    });
+
+    const root = parse(data);
 
     // Scrape product details
-    const title = $('h1.productName_title').first().text().trim();
-    const subtitle = $('p.productName_subtitle').first().text().trim();
-    const before_discount = $('p.productPrice_rrp.productPrice_rrp_colour').first().text().trim() || '0.00';
-    const save = $('productPrice_savingAmount.productPrice_savingAmount_colour').first().text().trim() || '0.00';
-    const price = $('p.productPrice_price').text().trim();
+    const title = root.querySelector('h1.productName_title')?.text.trim() || '';
+    const subtitle = root.querySelector('p.productName_subtitle')?.text.trim() || '';
+    const before_discount = root.querySelector('p.productPrice_rrp.productPrice_rrp_colour')?.text.trim() || '0.00';
+    const save = root.querySelector('productPrice_savingAmount.productPrice_savingAmount_colour')?.text.trim() || '0.00';
+    const price = root.querySelector('p.productPrice_price')?.text.trim() || '';
 
     // Scrape discount details
-    const discountText = $('.stripBanner_text').text().trim();
+    const discountText = root.querySelector('.stripBanner_text')?.text.trim() || '';
     const discountMatch = discountText.match(/(\d+)% OFF/);
     const discount_percentage = discountMatch ? parseInt(discountMatch[1], 10) : 0;
     const eventMatch = discountText.match(/CODE【([^】]+)】/);
@@ -240,7 +314,7 @@ export const scrapeAllInformation = async (url: string): Promise<ScrapedInformat
     };
 
     // Parse product schema
-    const productSchemaScript = $('#productSchema').html();
+    const productSchemaScript = root.querySelector('#productSchema')?.text;
     if (!productSchemaScript) {
       throw new Error('Product schema script not found');
     }
