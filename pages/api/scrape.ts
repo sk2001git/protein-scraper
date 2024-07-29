@@ -63,12 +63,12 @@ const checkHeaders = (req: NextApiRequest): NextResponse | null => {
   //@ts-ignore: Despite using the headers type as well as optional chaining, TypeScript still complains about the type of headers.get
   const secret = headers?.get('Cron-Secret');
 
-  if (!secret || secret !== process.env.CRON_SECRET) {
-    return NextResponse.json({ error: 'Unauthorized Accessing API' }, { status: 401 });
-  }
-  // if (!secret || secret !== 'GP6qA5YlQXjcAI0OXWd5X8oADjhLB4I6') {
+  // if (!secret || secret !== process.env.CRON_SECRET) {
   //   return NextResponse.json({ error: 'Unauthorized Accessing API' }, { status: 401 });
   // }
+  if (!secret || secret !== 'GP6qA5YlQXjcAI0OXWd5X8oADjhLB4I6') {
+    return NextResponse.json({ error: 'Unauthorized Accessing API' }, { status: 401 });
+  }
   
   return null;
 }

@@ -55,10 +55,10 @@ export default {
         console.error(`Error calling API for ${url}:`, error);
       }
     };
-    for (const url of urls) {
-      await fetchApi(url);
-    }
-    // await Promise.all(urls.map(url => fetchApi(url)));
+    // for (const url of urls) {
+    //   await fetchApi(url);
+    // }
+    await Promise.all(urls.map(url => fetchApi(url)));
   },
 
   async fetch(request: Request, env: Env): Promise<Response> {
