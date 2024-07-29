@@ -9,7 +9,6 @@ export const scrapeAndReturnAllProductUrls = async (supabase: SupabaseClient): P
     const { data: categoryUrls, error } = await supabase
       .from('category_urls')
       .select('id, url')
-      .limit(1);
     
 
     if (error) {
