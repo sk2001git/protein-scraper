@@ -9,7 +9,7 @@ compatibility_flags = [ "nodejs_compat" ]
 vars = { NEXTJS_API_URL = "https://protein-scraper.pages.dev"}
 
 [env.development]
-vars = { NEXTJS_API_URL = "http://localhost:3000", CRON_SECRET = "GP6qA5YlQXjcAI0OXWd5X8oADjhLB4I6"}
+vars = { NEXTJS_API_URL = "http://localhost:3000", CRON_SECRET = "GP6qA5YlQXjcAI0OXWd5X8oADjhLB4I6" }
 
 
 
