@@ -63,12 +63,12 @@ const checkHeaders = (req: NextApiRequest): NextResponse | null => {
   //@ts-ignore: Despite using the headers type as well as optional chaining, TypeScript still complains about the type of headers.get
   const secret = headers?.get('Cron-Secret');
 
-  if (!secret || secret !== process.env.CRON_SECRET) {
-    return NextResponse.json({ error: 'Unauthorized Accessing API' }, { status: 401 });
-  }
-  // if (!secret || secret !== 'GP6qA5YlQXjcAI0OXWd5X8oADjhLB4I6') {
+  // if (!secret || secret !== process.env.CRON_SECRET) {
   //   return NextResponse.json({ error: 'Unauthorized Accessing API' }, { status: 401 });
   // }
+  if (!secret || secret !== 'GP6qA5YlQXjcAI0OXWd5X8oADjhLB4I6') {
+    return NextResponse.json({ error: 'Unauthorized Accessing API' }, { status: 401 });
+  }
   
   return null;
 }
@@ -120,7 +120,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       getUrlId(supabase, productUrl)
     ]);
 
-    console.log('Product details:', productDetails); 
 
     if (!productDetails.title) {
       console.error('Failed to scrape product details: Title is missing');
@@ -135,7 +134,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (product instanceof NextResponse) { // If the function returns a NextResponse object, it means an error occurred
       return product;
     }
-    console.log('Upserted product:', product);
+    // console.log('Upserted product:', product);
 
     // Implement product options as well as their relevant triggers
     start = performance.now();
@@ -143,7 +142,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     end = performance.now();
     console.log(`updateOptions execution time: ${end - start} milliseconds`);
 
-    console.log('Product options:', productOptionsList);
+    // console.log('Product options:', productOptionsList);
 
      // Implement discount functions as well as their relevant triggers
     start = performance.now();
