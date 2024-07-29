@@ -69,6 +69,19 @@ interface Options {
   price: string;
 }
 
+export interface DiscountDetails {
+  id?: number;
+  event_name: string;
+  discount_percentage: number;
+  created_at?: string;
+}
+
+interface ScrapedInformation {
+  productDetails: ProductDetails;
+  priceOptions: PriceOption[];
+  discountDetails: DiscountDetails;
+}
+
 
 
 /**
@@ -129,7 +142,7 @@ export const updateProduct = async (productDetails: ProductDetails, url_id: numb
       updatedat: new Date(),
       url_id: url_id,
     },
-    { onConflict: 'name' }
+    { onConflict: 'name', ignoreDuplicates: false }
   )
   .select()
   .single();
@@ -188,6 +201,76 @@ export const scrapeProductOffers = async (url: string): Promise<PriceOption[]> =
   }
 }
 
+export const scrapeAllInformation = async (url: string): Promise<ScrapedInformation> => {
+  const start = performance.now();
+
+  try {
+    const startGet = performance.now();
+    const { data } = await axios.get(url);
+    const $ = cheerio.load(data);
+    const startEnd = performance.now();
+    console.log(`Cheerio load time: ${startEnd - startGet} milliseconds`);
+
+    // Scrape product details
+    const title = $('h1.productName_title').first().text().trim();
+    const subtitle = $('p.productName_subtitle').first().text().trim();
+    const before_discount = $('p.productPrice_rrp.productPrice_rrp_colour').first().text().trim() || '0.00';
+    const save = $('productPrice_savingAmount.productPrice_savingAmount_colour').first().text().trim() || '0.00';
+    const price = $('p.productPrice_price').text().trim();
+
+    // Scrape discount details
+    const discountText = $('.stripBanner_text').text().trim();
+    const discountMatch = discountText.match(/(\d+)% OFF/);
+    const discount_percentage = discountMatch ? parseInt(discountMatch[1], 10) : 0;
+    const eventMatch = discountText.match(/CODE【([^】]+)】/);
+    const event_name = eventMatch ? eventMatch[1] : '';
+
+    const productDetails: ProductDetails = {
+      title,
+      subtitle,
+      before_discount,
+      save,
+      price,
+      discount_percentage,
+    };
+
+    const discountDetails: DiscountDetails = {
+      discount_percentage,
+      event_name,
+    };
+
+    // Parse product schema
+    const productSchemaScript = $('#productSchema').html();
+    if (!productSchemaScript) {
+      throw new Error('Product schema script not found');
+    }
+
+    const productSchema: ProductSchema = JSON.parse(productSchemaScript);
+
+    const priceOptions: PriceOption[] = productSchema.hasVariant.map(variant => ({
+      name: variant.name,
+      dataOptionsId: parseInt(variant['@id']),
+      price: variant.offers.price,
+    }));
+
+    if (productSchema.productGroupID) {
+      productDetails.id = parseInt(productSchema.productGroupID);
+    }
+
+    return {
+      productDetails,
+      priceOptions,
+      discountDetails,
+    };
+
+  } catch (error) {
+    console.error('Error scraping URL:', error);
+    throw error;
+  } finally {
+    const end = performance.now();
+    console.log(`Scraping execution time: ${end - start} milliseconds`);
+  }
+};
 /**
  * Updates the options table for the product
  * @param options  The options to be updated
@@ -196,34 +279,55 @@ export const scrapeProductOffers = async (url: string): Promise<PriceOption[]> =
  * @returns  The updated options else a NextResponse denoting an error
  */
 export const updateOptions = async (options: PriceOption[], productId: number, supabase: SupabaseClient): Promise<Options[]> => {
-  const results: Options[] = [];
-
-  for (const option of options) {
-    const { data, error, status } = await supabase
-      .from('product_options')
-      .upsert(
-        {
-          product_id: productId,
-          option_type: option.name,
-          data_option_id: option.dataOptionsId,
-        },
-        { onConflict:'product_id, option_type' }
-      )
-      .select('id, product_id, option_type, data_option_id');
-
-
-    if (error) {
-      console.error('Error upserting options:', error);
-      throw error;
-    }
-    if (data) {
-      const updatedData = data.map((item: any) => ({
-        ...item,
-        price: option.price,
-      }));
-      results.push(...updatedData);
-    }
-  }
+  const seen = new Set<string>();
   
-  return results;
+  // Filter options to remove duplicates based on combination of option.name and option.dataOptionsId
+  const uniqueOptions = options.filter(option => {
+    const key = `${productId}-${option.name}-${option.dataOptionsId}`;
+    if (seen.has(key)) {
+      return false; 
+    }
+    seen.add(key); 
+    return true;
+  });
+
+
+  const upsertData = uniqueOptions.map(option => ({
+    product_id: productId,
+    option_type: option.name,
+    data_option_id: option.dataOptionsId,
+  }));
+  
+  const { data: unused , error } = await supabase
+    .from('product_options')
+    .upsert(upsertData, { onConflict: 'product_id, option_type', ignoreDuplicates: true })
+
+  const { data, error: fetchError } = await supabase
+    .from('product_options')
+    .select('id, product_id, option_type, data_option_id')
+    .eq('product_id', productId);
+
+  if (error) {
+    console.error('Error upserting options:', error);
+    throw error;
+  }
+
+  const results: Options[] = [];
+  if (data) {
+    data.forEach((item: any) => {
+      for (const option of options) {
+        if (item.option_type === option.name && item.data_option_id === option.dataOptionsId) {
+          results.push({
+            id: item.id,
+            product_id: item.product_id,
+            option_type: item.option_type,
+            data_option_id: item.data_option_id,
+            price: option.price,
+          });
+        }
+      }
+    });
+  }
+
+  return results || [];
 }

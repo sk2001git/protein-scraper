@@ -32,7 +32,7 @@ const deactivateCurrentEvent = async (supabase: SupabaseClient): Promise<void> =
 const activateNewEvent = async (discount_id: number, supabase: SupabaseClient): Promise<void> => {
   const { data, error } = await supabase
     .from('active_event')
-    .upsert([{ id: 0, discount_id }, { onConflict: 'discount_id' }]);
+    .insert([{ id: 0, discount_id }]);
 
   if (error) {
     throw error;

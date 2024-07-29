@@ -58,7 +58,7 @@ const getExistingDiscount = async (eventName: string, supabase: SupabaseClient )
 const upsertDiscount = async (eventName: string, discountPercentage: number, supabase: SupabaseClient): Promise<DiscountDetails> => {
   const { data, error } = await supabase
     .from('discounts')
-    .upsert([{ event_name: eventName, discount_percentage: discountPercentage }], { onConflict: 'event_name' })
+    .upsert([{ event_name: eventName, discount_percentage: discountPercentage }], { onConflict: 'event_name', ignoreDuplicates: false})
     .select('id, event_name, discount_percentage, created_at')
     .single();
   if (error) {
@@ -76,8 +76,7 @@ const upsertDiscount = async (eventName: string, discountPercentage: number, sup
  * @param supabase The Supabase client
  * @returns The discount details
  */
-export const triggerDiscounts = async (url: string, supabase: SupabaseClient): Promise<DiscountDetails> => {
-  const discountDetails = await cheerioScrapeDiscountDetails(url);
+export const triggerDiscounts = async (url: string, supabase: SupabaseClient, discountDetails: DiscountDetails): Promise<DiscountDetails> => {
   if (!discountDetails.event_name) {
     throw new Error('No event name detected');
   }

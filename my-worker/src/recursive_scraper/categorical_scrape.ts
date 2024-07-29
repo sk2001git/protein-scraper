@@ -8,7 +8,8 @@ export const scrapeAndReturnAllProductUrls = async (supabase: SupabaseClient): P
   try {
     const { data: categoryUrls, error } = await supabase
       .from('category_urls')
-      .select('id, url');
+      .select('id, url')
+      .limit(1);
     
 
     if (error) {
@@ -19,7 +20,6 @@ export const scrapeAndReturnAllProductUrls = async (supabase: SupabaseClient): P
       throw new Error('No category URLs found');
     }
 
-    let allUrls: string[] = [];
 
     const baseURL = 'https://www.myprotein.com';
     const filteredCategoryUrls = categoryUrls.filter(({ url }) => {
@@ -27,22 +27,23 @@ export const scrapeAndReturnAllProductUrls = async (supabase: SupabaseClient): P
       return relativeUrl.includes('protein');
     });
     const visitedUrls = new Set<string>();
-    for (const { id, url } of filteredCategoryUrls) {
+    const allUrls = await Promise.all(filteredCategoryUrls.map(async ({ id, url }) => {
       if (!visitedUrls.has(url)) {
         visitedUrls.add(url);
-        const urls = await scrapeCategory(supabase, id, url);
-        allUrls = allUrls.concat(urls);
+        const urls = await scrapeCategory(supabase, id, url, visitedUrls);
+        return urls;
       }
-    }
+      return [];
+    }));
 
-    return allUrls;
+    return allUrls.flat();
   } catch (error) {
     console.error('Error scraping category URLs:', error);
     throw error;
   }
 };
 
-const scrapeCategory = async (supabase: SupabaseClient, categoryId: number, baseUrl: string): Promise<string[]> => {
+const scrapeCategory = async (supabase: SupabaseClient, categoryId: number, baseUrl: string, visitedUrls: Set<string>): Promise<string[]> => {
   let urls: string[] = [];
   let pageNumber = 1;
 
@@ -54,10 +55,13 @@ const scrapeCategory = async (supabase: SupabaseClient, categoryId: number, base
       const products: ProductCard[] = await scrapeProductInProductList(pageUrl, supabase);
       if (products.length === 0) break; // Stop if no products are found
 
-      for (const product of products) {
-        await processProduct(supabase, product, categoryId);
-        urls.push(product.url);
-      }
+      await Promise.all(products.map(async (product) => {
+        if (!visitedUrls.has(product.url)) {
+          visitedUrls.add(product.url);
+          await processProduct(supabase, product, categoryId);
+          urls.push(product.url);
+        }
+      }));
       pageNumber++;
     } catch (error) {
       console.error(`Error scraping products from URL ${pageUrl}: ${error}`);
@@ -78,7 +82,7 @@ const processProduct = async (supabase: SupabaseClient, product: ProductCard, ca
         category_url_id: categoryId,
         last_scraped_at: new Date(),
       },
-    ], { onConflict: 'url' });
+    ], { onConflict: 'url', ignoreDuplicates: false });
 
   if (error) {
     console.error(`Error updating URL ${product.name}: ${error.message}`);

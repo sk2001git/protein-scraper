@@ -10,20 +10,15 @@ interface PriceDetails {
 
 export const runtime = 'edge';
 
-export const insertPrice = async (priceString: string, discount_id:number, option_id:number, supabase: SupabaseClient): Promise<NextResponse | PriceDetails[]> => {
-  const { data: price, error: insertError, status: insertStatus } = await supabase
-  .from('price')
-  .insert({
-    price: parseFloat(priceString.replace(/[^0-9.-]+/g, "")),
-    discount_id: discount_id,
-    option_id: option_id
-  })
-  .select();
+export const insertPrices = async (priceData: { price: number; discount_id: number; option_id: number }[], supabase: SupabaseClient): Promise<NextResponse | PriceDetails[]> => {
+  const { data: prices, error: insertError, status: insertStatus } = await supabase
+    .from('price')
+    .insert(priceData)
+    .select();
 
   if (insertError) {
-    console.error('Error inserting price:', insertError);
-    return NextResponse.json({ error: 'Failed to insert price', details: insertError.message, status: insertStatus }, { status: 500 });
+    console.error('Error inserting prices:', insertError);
+    return NextResponse.json({ error: 'Failed to insert prices', details: insertError.message, status: insertStatus }, { status: 500 });
   }
-  return price;
-
-}
+  return prices;
+};

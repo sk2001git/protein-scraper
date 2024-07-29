@@ -34,9 +34,8 @@ export default {
     const supabase = createClient(env.NEXT_PUBLIC_SUPABASE_URL!, env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
     const urls = await scrapeAndReturnAllProductUrls(supabase);
 
-    for (const url of urls) {
+    const fetchApi = async (url: string) => {
       try {
-        
         const apiUrl = `${env.NEXTJS_API_URL}/api/scrape?url=${url}`;
         console.log(`Calling API for ${url} at ${apiUrl}`);
         const response = await fetch(apiUrl, {
@@ -46,7 +45,7 @@ export default {
             'Cron-Secret': env.CRON_SECRET,
           },
         });
-
+    
         if (!response.ok) {
           console.error(`Failed to call API for ${url}:`, response.statusText);
         } else {
@@ -55,7 +54,11 @@ export default {
       } catch (error) {
         console.error(`Error calling API for ${url}:`, error);
       }
+    };
+    for (const url of urls) {
+      await fetchApi(url);
     }
+    // await Promise.all(urls.map(url => fetchApi(url)));
   },
 
   async fetch(request: Request, env: Env): Promise<Response> {
