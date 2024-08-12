@@ -32,8 +32,8 @@ export default {
     ctx: ExecutionContext
   ): Promise<void> {
     const supabase = createClient(env.NEXT_PUBLIC_SUPABASE_URL!, env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
-    const urls = await scrapeAndReturnAllProductUrls(supabase);
-
+    // const urls = await scrapeAndReturnAllProductUrls(supabase);
+    const {data, error} = await supabase.from('urls').select('url')
     const fetchApi = async (url: string) => {
       try {
         const apiUrl = `${env.NEXTJS_API_URL}/api/scrape?url=${url}`;
@@ -55,10 +55,10 @@ export default {
         console.error(`Error calling API for ${url}:`, error);
       }
     };
-    for (const url of urls) {
-      await fetchApi(url);
+    
+    if (data) {
+      await Promise.all(data.map((url) => fetchApi(url.url)));
     }
-    // await Promise.all(urls.map(url => fetchApi(url)));
   },
 
   async fetch(request: Request, env: Env): Promise<Response> {
