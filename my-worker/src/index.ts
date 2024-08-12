@@ -57,11 +57,8 @@ export default {
     };
     
     if (data) {
-      for (const url of data) {
-        await fetchApi(url.url);
-      }
+      await Promise.all(data.map((url) => fetchApi(url.url)));
     }
-    // await Promise.all(urls.map(url => fetchApi(url)));
   },
 
   async fetch(request: Request, env: Env): Promise<Response> {
