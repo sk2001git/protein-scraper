@@ -20,6 +20,7 @@ export interface Env {
   NEXTJS_API_URL: string; 
   NEXT_PUBLIC_SUPABASE_URL: string;
   NEXT_PUBLIC_SUPABASE_ANON_KEY: string;
+  WORKER_URL: string;  // Add this line
 }
 
 // npx wrangler dev my-worker/src/index.ts --test-scheduled   command to test
@@ -31,33 +32,47 @@ export default {
     env: Env,
     ctx: ExecutionContext
   ): Promise<void> {
+    await this.processUrlBatch(0, env);
+  },
+
+  async processUrlBatch(
+    offset: number,
+    env: Env
+  ): Promise<void> {
     const supabase = createClient(env.NEXT_PUBLIC_SUPABASE_URL!, env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
-    // const urls = await scrapeAndReturnAllProductUrls(supabase);
-    const {data, error} = await supabase.from('urls').select('url')
-    const fetchApi = async (url: string) => {
-      try {
-        const apiUrl = `${env.NEXTJS_API_URL}/api/scrape?url=${url}`;
-        console.log(`Calling API for ${url} at ${apiUrl}`);
-        const response = await fetch(apiUrl, {
-          method: 'GET',
+    const BATCH_SIZE = 10;
+
+    const { data, error } = await supabase
+      .from('urls')
+      .select('url')
+      .range(offset, offset + BATCH_SIZE - 1);
+
+    if (error) {
+      console.error("Error fetching URLs:", error);
+      return;
+    }
+
+    if (data && data.length > 0) {
+      const workerCalls = data.map(({ url }) => 
+        fetch(new Request(env.WORKER_URL, {
+          method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Cron-Secret': env.CRON_SECRET,
           },
-        });
-    
-        if (!response.ok) {
-          console.error(`Failed to call API for ${url}:`, response.statusText);
-        } else {
-          console.log(`Successfully called API for ${url}`);
-        }
-      } catch (error) {
-        console.error(`Error calling API for ${url}:`, error);
+          body: JSON.stringify({ url }),
+        }))
+      );
+
+      await Promise.all(workerCalls);
+
+      // If we processed a full batch, there might be more URLs to process
+      if (data.length === BATCH_SIZE) {
+        // Schedule the next batch
+        setTimeout(() => {
+          this.processUrlBatch(offset + BATCH_SIZE, env);
+        }, 0);
       }
-    };
-    
-    if (data) {
-      await Promise.all(data.map((url) => fetchApi(url.url)));
     }
   },
 
@@ -67,15 +82,39 @@ export default {
     if (url.pathname === '/favicon.ico') {
       return new Response(null, { status: 200 });
     }
+
+    if (request.method === 'POST') {
+      try {
+        const { url } = await request.json() as { url: string };
+        const apiUrl = `${env.NEXTJS_API_URL}/api/scrape?url=${url}`;
+        console.log(`Calling API for ${url} at ${apiUrl}`);
+        
+        const response = await fetch(apiUrl, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Cron-Secret': env.CRON_SECRET,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to call API for ${url}: ${response.statusText}`);
+        }
+
+        console.log(`Successfully called API for ${url}`);
+        return new Response(`Processed ${url}`, { status: 200 });
+      } catch (error) {
+        console.error(`Error processing URL: ${(error as Error).message}`);
+        return new Response(`Error: ${(error as Error).message}`, { status: 500 });
+      }
+    }
+
     if (request.method === 'GET') {
       console.log('Fetch handler invoked');
-      await this.scheduled( {} as ScheduledController, env, {} as ExecutionContext);
- 
+      await this.scheduled({} as ScheduledController, env, {} as ExecutionContext);
       return new Response("Fetch handler executed", {
         status: 200,
-        headers: {
-          'Content-Type': 'text/plain',
-        },
+        headers: { 'Content-Type': 'text/plain' },
       });
     }
 

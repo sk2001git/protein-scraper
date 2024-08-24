@@ -297,7 +297,7 @@ export const scrapeAllInformation = async (url: string): Promise<ScrapedInformat
     const discountMatch = discountText.match(/(\d+)% OFF/);
     const discount_percentage = discountMatch ? parseInt(discountMatch[1], 10) : 0;
     const eventMatch = discountText.match(/CODE【([^】]+)】/);
-    const event_name = eventMatch ? eventMatch[1] : '';
+    const event_name = eventMatch ? eventMatch[1] : 'No Code Needed';
 
     const productDetails: ProductDetails = {
       title,

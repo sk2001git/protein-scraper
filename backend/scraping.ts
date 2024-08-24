@@ -19,7 +19,6 @@ export async function firecrawl_scrape(url: string): Promise<ScrapeResult> {
 
   try {
     const scrapedData = await app.scrapeUrl(url);
-    console.log('Scraped data:', scrapedData);
     return {
       url,
       content: scrapedData,
