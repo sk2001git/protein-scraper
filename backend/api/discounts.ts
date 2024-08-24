@@ -29,7 +29,6 @@ const cheerioScrapeDiscountDetails = async (url: string): Promise<DiscountDetail
 
     const eventMatch = discountText.match(/CODE【([^】]+)】/);
     const event_name = eventMatch ? eventMatch[1] : '';
-    console.log(event_name)
 
     return {
       discount_percentage,

@@ -48,7 +48,7 @@ const scrapeCategory = async (supabase: SupabaseClient, categoryId: number, base
 
   while (true) {
     const pageUrl = `${baseUrl}?pageNumber=${pageNumber}`;
-    console.log(`Scraping products from URL: ${pageUrl}`);
+    // console.log(`Scraping products from URL: ${pageUrl}`);
     
     try {
       const products: ProductCard[] = await scrapeProductInProductList(pageUrl, supabase);
@@ -86,6 +86,6 @@ const processProduct = async (supabase: SupabaseClient, product: ProductCard, ca
   if (error) {
     console.error(`Error updating URL ${product.name}: ${error.message}`);
   } else {
-    console.log(`Successfully updated URL ${product.name}: ${product.data_option_id}`);
+    //console.log(`Successfully updated URL ${product.name}: ${product.data_option_id}`);
   }
 };

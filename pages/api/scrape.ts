@@ -66,6 +66,7 @@ const checkHeaders = (req: NextApiRequest): NextResponse | null => {
   if (!secret || secret !== process.env.CRON_SECRET) {
     return NextResponse.json({ error: 'Unauthorized Accessing API' }, { status: 401 });
   }
+
   // if (!secret || secret !== 'GP6qA5YlQXjcAI0OXWd5X8oADjhLB4I6') {
   //   return NextResponse.json({ error: 'Unauthorized Accessing API' }, { status: 401 });
   // }
