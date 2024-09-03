@@ -25,6 +25,9 @@ export interface Env {
 
 // npx wrangler dev my-worker/src/index.ts --test-scheduled   command to test
 
+// Should probably hit the wrangler website again and again with multiple inputs i think
+//Exceeded CPU Time Limits
+//Exceeded Memory
 
 export default {
   async scheduled(
@@ -40,7 +43,8 @@ export default {
     env: Env
   ): Promise<void> {
     const supabase = createClient(env.NEXT_PUBLIC_SUPABASE_URL!, env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
-    const BATCH_SIZE = 10;
+    const BATCH_SIZE = 5;
+    const MAX_CONCURRENT_REQUESTS = 3;
 
     const { data, error } = await supabase
       .from('urls')
@@ -53,22 +57,21 @@ export default {
     }
 
     if (data && data.length > 0) {
-      const workerCalls = data.map(({ url }) => 
-        fetch(new Request(env.WORKER_URL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Cron-Secret': env.CRON_SECRET,
-          },
-          body: JSON.stringify({ url }),
-        }))
-      );
-
-      await Promise.all(workerCalls);
-
-      // If we processed a full batch, there might be more URLs to process
+      for (let i = 0; i < data.length; i += MAX_CONCURRENT_REQUESTS) {
+        const batch = data.slice(i, i + MAX_CONCURRENT_REQUESTS);
+        await Promise.all(batch.map(({ url }) =>
+          fetch(new Request(env.WORKER_URL, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Cron-Secret': env.CRON_SECRET,
+            },
+            body: JSON.stringify({ url }),
+          }))
+        ));
+      }
+  
       if (data.length === BATCH_SIZE) {
-        // Schedule the next batch
         setTimeout(() => {
           this.processUrlBatch(offset + BATCH_SIZE, env);
         }, 0);
