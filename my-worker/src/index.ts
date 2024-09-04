@@ -59,7 +59,7 @@ export default {
     if (data && data.length > 0) {
       for (let i = 0; i < data.length; i += MAX_CONCURRENT_REQUESTS) {
         const batch = data.slice(i, i + MAX_CONCURRENT_REQUESTS);
-        await Promise.all(batch.map(({ url }) =>
+        batch.forEach(({ url }) => {
           fetch(new Request(env.WORKER_URL, {
             method: 'POST',
             headers: {
@@ -67,8 +67,8 @@ export default {
               'Cron-Secret': env.CRON_SECRET,
             },
             body: JSON.stringify({ url }),
-          }))
-        ));
+          })).catch((error) => console.error(`Request to ${url} failed: ${error.message}`));
+        });
       }
   
       if (data.length === BATCH_SIZE) {
@@ -92,17 +92,13 @@ export default {
         const apiUrl = `${env.NEXTJS_API_URL}/api/scrape?url=${url}`;
         console.log(`Calling API for ${url} at ${apiUrl}`);
         
-        const response = await fetch(apiUrl, {
+        fetch(apiUrl, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
             'Cron-Secret': env.CRON_SECRET,
           },
-        });
-
-        if (!response.ok) {
-          throw new Error(`Failed to call API for ${url}: ${response.statusText}`);
-        }
+        }).catch((error) => console.error(`Failed to call API for ${url}: ${error.message}`));
 
         console.log(`Successfully called API for ${url}`);
         return new Response(`Processed ${url}`, { status: 200 });
