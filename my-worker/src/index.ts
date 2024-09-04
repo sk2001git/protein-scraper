@@ -12,7 +12,6 @@
 
 import { ScheduledController } from "@cloudflare/workers-types/experimental";
 import { ExecutionContext } from "@cloudflare/workers-types/experimental";
-import { scrapeAndReturnAllProductUrls } from "./recursive_scraper/categorical_scrape";
 import { createClient} from "@supabase/supabase-js";
 
 export interface Env {
@@ -60,7 +59,8 @@ export default {
       for (let i = 0; i < data.length; i += MAX_CONCURRENT_REQUESTS) {
         const batch = data.slice(i, i + MAX_CONCURRENT_REQUESTS);
         batch.forEach(({ url }) => {
-          fetch(new Request(env.WORKER_URL, {
+          fetch(new Request(
+            "https://my-worker.gundamsean22.workers.dev/", {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
