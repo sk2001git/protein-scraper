@@ -43,8 +43,8 @@ export default {
     env: Env
   ): Promise<void> {
     const supabase = createClient(env.NEXT_PUBLIC_SUPABASE_URL!, env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
-    const BATCH_SIZE = 5;
-    const MAX_CONCURRENT_REQUESTS = 3;
+    const BATCH_SIZE = 2;
+    const MAX_CONCURRENT_REQUESTS = 1;
 
     const { data, error } = await supabase
       .from('urls')
