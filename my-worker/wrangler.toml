@@ -18,7 +18,3 @@ crons = ["0 8,20 * * *"]
 [vars]
 NEXTJS_API_URL = "https://protein-scraper.pages.dev"
 
-
-
-
-

@@ -1,4 +1,5 @@
 import { createBrowserClient } from '@supabase/ssr';
+import { addDays } from 'date-fns';
 import { DateRange } from "react-day-picker";
 import { z } from 'zod';
 
@@ -133,7 +134,10 @@ export async function getPricesWithDiscounts(option_id: number, dateRange: DateR
     .eq('option_id', option_id);
   
     if (dateRange?.from && dateRange?.to) {
-      query = query.gte('timestamp', dateRange.from.toISOString()).lte('timestamp', dateRange.to.toISOString());
+      const adjustedToDate = addDays(dateRange.to, 1);
+      query = query
+        .gte('timestamp', dateRange.from.toISOString())
+        .lte('timestamp', adjustedToDate.toISOString());
     }
     const { data, error } = await query;
     if (error) {

@@ -19,14 +19,15 @@ export interface Env {
   NEXTJS_API_URL: string; 
   NEXT_PUBLIC_SUPABASE_URL: string;
   NEXT_PUBLIC_SUPABASE_ANON_KEY: string;
-  WORKER_URL: string;  // Add this line
 }
 
 // npx wrangler dev my-worker/src/index.ts --test-scheduled   command to test
+// wrangler deploy <pathtoindex> to deploy
 
 // Should probably hit the wrangler website again and again with multiple inputs i think
 //Exceeded CPU Time Limits
 //Exceeded Memory
+//  Max 50 subrequest for 1 request ( This means u can only get the worker to do 50 things at most as calls to functions liek fetch)
 
 export default {
   async scheduled(
@@ -34,48 +35,33 @@ export default {
     env: Env,
     ctx: ExecutionContext
   ): Promise<void> {
-    await this.processUrlBatch(0, env);
-  },
-
-  async processUrlBatch(
-    offset: number,
-    env: Env
-  ): Promise<void> {
     const supabase = createClient(env.NEXT_PUBLIC_SUPABASE_URL!, env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
-    const BATCH_SIZE = 2;
-    const MAX_CONCURRENT_REQUESTS = 1;
-
-    const { data, error } = await supabase
-      .from('urls')
-      .select('url')
-      .range(offset, offset + BATCH_SIZE - 1);
-
-    if (error) {
-      console.error("Error fetching URLs:", error);
-      return;
-    }
-
-    if (data && data.length > 0) {
-      for (let i = 0; i < data.length; i += MAX_CONCURRENT_REQUESTS) {
-        const batch = data.slice(i, i + MAX_CONCURRENT_REQUESTS);
-        batch.forEach(({ url }) => {
-          fetch(new Request(
-            "https://my-worker.gundamsean22.workers.dev/", {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Cron-Secret': env.CRON_SECRET,
-            },
-            body: JSON.stringify({ url }),
-          })).catch((error) => console.error(`Request to ${url} failed: ${error.message}`));
+    // const urls = await scrapeAndReturnAllProductUrls(supabase);
+    const {data, error} = await supabase.from('urls').select('url')
+    const fetchApi = async (url: string) => {
+      try {
+        const apiUrl = `${env.NEXTJS_API_URL}/api/scrape?url=${url}`;
+        console.log(`Calling API for ${url} at ${apiUrl}`);
+        const response = await fetch(apiUrl, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Cron-Secret': env.CRON_SECRET,
+          },
         });
+    
+        if (!response.ok) {
+          console.error(`Failed to call API for ${url}:`, response.statusText);
+        } else {
+          console.log(`Successfully called API for ${url}`);
+        }
+      } catch (error) {
+        console.error(`Error calling API for ${url}:`, error);
       }
-  
-      if (data.length === BATCH_SIZE) {
-        setTimeout(() => {
-          this.processUrlBatch(offset + BATCH_SIZE, env);
-        }, 0);
-      }
+    };
+    
+    if (data) {
+      await Promise.all(data.map((url) => fetchApi(url.url)));
     }
   },
 
@@ -85,35 +71,15 @@ export default {
     if (url.pathname === '/favicon.ico') {
       return new Response(null, { status: 200 });
     }
-
-    if (request.method === 'POST') {
-      try {
-        const { url } = await request.json() as { url: string };
-        const apiUrl = `${env.NEXTJS_API_URL}/api/scrape?url=${url}`;
-        console.log(`Calling API for ${url} at ${apiUrl}`);
-        
-        fetch(apiUrl, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'Cron-Secret': env.CRON_SECRET,
-          },
-        }).catch((error) => console.error(`Failed to call API for ${url}: ${error.message}`));
-
-        console.log(`Successfully called API for ${url}`);
-        return new Response(`Processed ${url}`, { status: 200 });
-      } catch (error) {
-        console.error(`Error processing URL: ${(error as Error).message}`);
-        return new Response(`Error: ${(error as Error).message}`, { status: 500 });
-      }
-    }
-
     if (request.method === 'GET') {
       console.log('Fetch handler invoked');
-      await this.scheduled({} as ScheduledController, env, {} as ExecutionContext);
+      await this.scheduled( {} as ScheduledController, env, {} as ExecutionContext);
+ 
       return new Response("Fetch handler executed", {
         status: 200,
-        headers: { 'Content-Type': 'text/plain' },
+        headers: {
+          'Content-Type': 'text/plain',
+        },
       });
     }
 

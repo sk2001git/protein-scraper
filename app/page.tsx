@@ -25,7 +25,7 @@ export const metadata: Metadata = {
 }
 
 export default async function DashboardPage() {
-  const currentDiscount = await getCurrentDiscount();
+  const currentDiscount = await getCurrentDiscount() || 50;
   const nonExistent = currentDiscount === null;
   const isReasonable = nonExistent ? false : currentDiscount >= 80;
 
